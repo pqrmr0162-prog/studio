@@ -232,7 +232,7 @@ export default function Home() {
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
-                    accept="image/*,application/pdf,.doc,.docx,.txt"
+                    accept="image/*"
                   />
                   <Input
                     name="prompt"

@@ -14,7 +14,12 @@ import {z} from 'genkit';
 
 const InterpretPromptInputSchema = z.object({
   prompt: z.string().describe('The user prompt to be interpreted.'),
-  attachmentDataUri: z.string().optional().describe("An optional attachment (image or document), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+  attachmentDataUri: z
+    .string()
+    .optional()
+    .describe(
+      "An optional image attachment, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
 
 export type InterpretPromptInput = z.infer<typeof InterpretPromptInputSchema>;
@@ -25,7 +30,9 @@ const InterpretPromptOutputSchema = z.object({
 
 export type InterpretPromptOutput = z.infer<typeof InterpretPromptOutputSchema>;
 
-export async function interpretPrompt(input: InterpretPromptInput): Promise<InterpretPromptOutput> {
+export async function interpretPrompt(
+  input: InterpretPromptInput
+): Promise<InterpretPromptOutput> {
   return interpretPromptFlow(input);
 }
 
