@@ -143,8 +143,8 @@ export default function Home() {
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
-                        <CrowLogo className="w-12 h-12 md:w-16 md:h-16 mb-4"/>
-                        <p className="text-base md:text-lg font-semibold">How can I help you?</p>
+                        <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mb-4 text-primary"/>
+                        <p className="text-lg md:text-xl font-semibold">How can I help you?</p>
                         <p className="text-xs mt-1">by Bissu</p>
                     </div>
                 )}
@@ -158,7 +158,9 @@ export default function Home() {
                   >
                     {message.sender === 'ai' && (
                       <Avatar className="w-8 h-8 border shrink-0">
-                        <AvatarFallback><Bot size={16}/></AvatarFallback>
+                         <AvatarFallback>
+                            <CrowLogo className="w-5 h-5 text-muted-foreground" />
+                        </AvatarFallback>
                       </Avatar>
                     )}
                     <div
@@ -188,7 +190,9 @@ export default function Home() {
                 {useFormStatus().pending && (
                   <div className="flex items-start gap-2 md:gap-4">
                       <Avatar className="w-8 h-8 border">
-                        <AvatarFallback><Bot size={16}/></AvatarFallback>
+                         <AvatarFallback>
+                            <CrowLogo className="w-5 h-5 text-muted-foreground" />
+                         </AvatarFallback>
                       </Avatar>
                       <div className="ai-message rounded-2xl px-4 py-3 text-sm">
                           <div className="flex items-center gap-2">
