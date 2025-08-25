@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -46,9 +46,23 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [theme, setTheme] = useState('dark');
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme) {
+      setTheme(storedTheme);
+    }
+  }, []);
+  
+  useEffect(() => {
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (state.error) {
@@ -123,6 +137,10 @@ export default function Home() {
     handleRemoveAttachment();
   };
 
+  const toggleTheme = () => {
+    setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
+  };
+  
   return (
     <div className="flex h-screen bg-background">
       <div className="flex flex-col flex-1">
@@ -131,7 +149,11 @@ export default function Home() {
             <CrowLogo className="w-8 h-8"/>
             <h1 className="text-lg font-bold">AeonAI</h1>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button onClick={toggleTheme} variant="outline" size="icon">
+                {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
+                <span className="sr-only">Toggle theme</span>
+            </Button>
             <Button onClick={handleNewChat} variant="outline" size="sm">
                 <Plus size={16}/>
                 <span className="hidden md:inline ml-2">New Chat</span>
