@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const InterpretPromptInputSchema = z.object({
   prompt: z.string().describe('The user prompt to be interpreted.'),
+  attachmentDataUri: z.string().optional().describe("An optional attachment (image or document), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 
 export type InterpretPromptInput = z.infer<typeof InterpretPromptInputSchema>;
@@ -32,11 +33,17 @@ const interpretPromptPrompt = ai.definePrompt({
   name: 'interpretPromptPrompt',
   input: {schema: InterpretPromptInputSchema},
   output: {schema: InterpretPromptOutputSchema},
-  prompt: `You are an intelligent AI assistant. A user has provided the following prompt:
+  prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment.
 
+{{#if attachmentDataUri}}
+Attachment:
+{{media url=attachmentDataUri}}
+{{/if}}
+
+Prompt:
 {{prompt}}
 
-If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "I am a large language model, trained by Google and fine-tuned by Bissu.". For all other questions, generate a comprehensive and helpful response to the prompt.`,
+If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "I am a large language model, trained by Google and fine-tuned by Bissu.". For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment.`,
 });
 
 const interpretPromptFlow = ai.defineFlow(

@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import Image from 'next/image';
 
 const initialState = {
   response: null,
@@ -21,6 +22,7 @@ interface Message {
   id: number;
   sender: 'user' | 'ai';
   text: string;
+  imageUrl?: string;
 }
 
 function SubmitButton() {
@@ -42,7 +44,10 @@ export default function Home() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,19 +73,54 @@ export default function Home() {
       });
     }
   }, [messages]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAttachment(file);
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAttachmentPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachmentPreview(null);
+      }
+    }
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
+    setAttachmentPreview(null);
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
   
   const handleFormAction = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
-    if (currentPrompt.trim()) {
-      setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: currentPrompt }]);
+    if (currentPrompt.trim() || attachment) {
+      const userMessage: Message = {
+        id: Date.now(),
+        sender: 'user',
+        text: currentPrompt
+      };
+      if (attachmentPreview) {
+          userMessage.imageUrl = attachmentPreview;
+      }
+      setMessages(prev => [...prev, userMessage]);
+      
       formAction(formData);
       formRef.current?.reset();
       setPrompt("");
+      handleRemoveAttachment();
     }
   };
 
   const handleNewChat = () => {
     setMessages([]);
+    handleRemoveAttachment();
   };
 
   return (
@@ -127,6 +167,15 @@ export default function Home() {
                         message.sender === 'user' ? "user-message" : "ai-message"
                       )}
                     >
+                      {message.imageUrl && (
+                        <Image
+                            src={message.imageUrl}
+                            alt="User upload"
+                            width={300}
+                            height={300}
+                            className="rounded-lg mb-2"
+                        />
+                      )}
                       <p className="whitespace-pre-wrap">{message.text}</p>
                     </div>
                     {message.sender === 'user' && (
@@ -155,18 +204,42 @@ export default function Home() {
             
             <footer className="mt-auto pt-4">
               <div className="max-w-4xl mx-auto w-full">
+                {attachment && (
+                    <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
+                        {attachmentPreview ? (
+                            <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                        ) : (
+                            <Paperclip className="h-6 w-6" />
+                        )}
+                        <span className="text-sm truncate">{attachment.name}</span>
+                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6" onClick={handleRemoveAttachment}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
                 <form
                   ref={formRef}
                   action={handleFormAction}
                   className="flex items-center gap-4"
                 >
+                  <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                    <Paperclip className="h-5 w-5" />
+                    <span className="sr-only">Attach file</span>
+                  </Button>
+                  <input
+                    type="file"
+                    name="attachment"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*,application/pdf,.doc,.docx,.txt"
+                  />
                   <Input
                     name="prompt"
                     placeholder="Type your message..."
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    required
                     className="flex-1 rounded-full px-5"
                   />
                   <SubmitButton />
