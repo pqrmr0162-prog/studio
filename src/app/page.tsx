@@ -99,6 +99,7 @@ export default function Home() {
                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-20">
                       <TigerLogo className="w-16 h-16 mb-4"/>
                       <p className="text-lg font-semibold">How can I help you?</p>
+                      <p className="text-xs mt-1">by Bissu</p>
                   </div>
               )}
               {messages.map((message) => (
