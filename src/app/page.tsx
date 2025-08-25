@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const initialState = {
   response: null,
@@ -79,92 +80,112 @@ export default function Home() {
     }
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="flex items-center gap-4 p-4 border-b">
-        <TigerLogo className="w-10 h-10" />
-        <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              AeonAI Assistant
-            </h1>
-            <p className="text-sm text-muted-foreground">Online</p>
-        </div>
-      </header>
+  const handleNewChat = () => {
+    setMessages([]);
+  };
 
-      <div className="flex-1 flex justify-center py-6">
-        <main className="w-full max-w-4xl flex flex-col">
-          <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
-            <div className="space-y-6">
-              {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-20">
-                      <TigerLogo className="w-16 h-16 mb-4"/>
-                      <p className="text-lg font-semibold">How can I help you?</p>
-                      <p className="text-xs mt-1">by Bissu</p>
-                  </div>
-              )}
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex items-start gap-4",
-                    message.sender === 'user' && "justify-end"
-                  )}
-                >
-                  {message.sender === 'ai' && (
-                    <Avatar className="w-8 h-8 border">
-                      <AvatarFallback><Bot size={16}/></AvatarFallback>
-                    </Avatar>
-                  )}
+  return (
+    <div className="flex h-screen bg-background">
+      <aside className="w-64 flex flex-col p-4 border-r bg-secondary/40">
+        <div className="flex items-center gap-2 mb-4">
+          <TigerLogo className="w-8 h-8"/>
+          <h1 className="text-lg font-bold">AeonAI</h1>
+        </div>
+        <Button onClick={handleNewChat} variant="outline" className="w-full justify-start gap-2">
+            <Plus size={16}/>
+            New Chat
+        </Button>
+        <Separator className="my-4"/>
+        <p className="text-sm text-muted-foreground mb-2">History</p>
+        <ScrollArea className="flex-1">
+            <p className="text-sm text-muted-foreground text-center">No history yet.</p>
+        </ScrollArea>
+      </aside>
+
+      <div className="flex flex-col flex-1">
+        <header className="flex items-center gap-4 p-4 border-b">
+          <div className="flex flex-col">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                AeonAI Assistant
+              </h1>
+              <p className="text-sm text-muted-foreground">Online</p>
+          </div>
+        </header>
+        <main className="flex-1 flex flex-col p-6">
+            <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+              <div className="space-y-6 max-w-4xl mx-auto w-full">
+                {messages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-20">
+                        <TigerLogo className="w-16 h-16 mb-4"/>
+                        <p className="text-lg font-semibold">How can I help you?</p>
+                        <p className="text-xs mt-1">by Bissu</p>
+                    </div>
+                )}
+                {messages.map((message) => (
                   <div
+                    key={message.id}
                     className={cn(
-                      "max-w-[75%] rounded-2xl px-4 py-3 text-sm",
-                      message.sender === 'user' ? "user-message" : "ai-message"
+                      "flex items-start gap-4",
+                      message.sender === 'user' && "justify-end"
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
-                  </div>
-                  {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8 border">
-                      <AvatarFallback><User size={16}/></AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
-               {useFormStatus().pending && (
-                <div className="flex items-start gap-4">
-                    <Avatar className="w-8 h-8 border">
-                      <AvatarFallback><Bot size={16}/></AvatarFallback>
-                    </Avatar>
-                    <div className="ai-message rounded-2xl px-4 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-0"></div>
-                            <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-150"></div>
-                            <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-300"></div>
-                        </div>
+                    {message.sender === 'ai' && (
+                      <Avatar className="w-8 h-8 border">
+                        <AvatarFallback><Bot size={16}/></AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div
+                      className={cn(
+                        "max-w-[75%] rounded-2xl px-4 py-3 text-sm",
+                        message.sender === 'user' ? "user-message" : "ai-message"
+                      )}
+                    >
+                      <p className="whitespace-pre-wrap">{message.text}</p>
                     </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-          
-          <footer className="mt-auto p-4">
-            <form
-              ref={formRef}
-              action={handleFormAction}
-              className="flex items-center gap-4"
-            >
-              <Input
-                name="prompt"
-                placeholder="Type your message..."
-                autoComplete="off"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                required
-                className="flex-1 rounded-full px-5"
-              />
-              <SubmitButton />
-            </form>
-          </footer>
+                    {message.sender === 'user' && (
+                      <Avatar className="w-8 h-8 border">
+                        <AvatarFallback><User size={16}/></AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ))}
+                {useFormStatus().pending && (
+                  <div className="flex items-start gap-4">
+                      <Avatar className="w-8 h-8 border">
+                        <AvatarFallback><Bot size={16}/></AvatarFallback>
+                      </Avatar>
+                      <div className="ai-message rounded-2xl px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-0"></div>
+                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-150"></div>
+                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-300"></div>
+                          </div>
+                      </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+            
+            <footer className="mt-auto pt-4">
+              <div className="max-w-4xl mx-auto w-full">
+                <form
+                  ref={formRef}
+                  action={handleFormAction}
+                  className="flex items-center gap-4"
+                >
+                  <Input
+                    name="prompt"
+                    placeholder="Type your message..."
+                    autoComplete="off"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    required
+                    className="flex-1 rounded-full px-5"
+                  />
+                  <SubmitButton />
+                </form>
+              </div>
+            </footer>
         </main>
       </div>
     </div>
