@@ -3,7 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
-import { TigerLogo } from "@/components/logo";
+import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -128,7 +128,7 @@ export default function Home() {
       <div className="flex flex-col flex-1">
         <header className="flex items-center gap-2 md:gap-4 p-2 md:p-4 border-b">
           <div className="flex items-center gap-2">
-            <TigerLogo className="w-8 h-8"/>
+            <CrowLogo className="w-8 h-8"/>
             <h1 className="text-lg font-bold">AeonAI</h1>
           </div>
           <div className="ml-auto">
@@ -143,7 +143,7 @@ export default function Home() {
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
-                        <TigerLogo className="w-12 h-12 md:w-16 md:h-16 mb-4"/>
+                        <CrowLogo className="w-12 h-12 md:w-16 md:h-16 mb-4"/>
                         <p className="text-base md:text-lg font-semibold">How can I help you?</p>
                         <p className="text-xs mt-1">by Bissu</p>
                     </div>
