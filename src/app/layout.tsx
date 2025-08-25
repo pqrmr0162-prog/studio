@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'AeonAI Assistant',
-  description: 'An intelligent AI assistant built with Next.js and Genkit.',
+  description: 'An intelligent AI assistant built with Next.js, Genkit, and Firebase.',
 };
 
 export default function RootLayout({
