@@ -1,37 +1,38 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
 import { TigerLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Copy, Sparkles, Wand2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SendHorizonal, User, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const initialState = {
   response: null,
   error: null,
 };
 
+interface Message {
+  id: number;
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+    <Button type="submit" size="icon" disabled={pending} className="shrink-0">
       {pending ? (
-        <>
-          <Wand2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating...
-        </>
+        <Bot className="h-5 w-5 animate-spin" />
       ) : (
-        "Get Response"
+        <SendHorizonal className="h-5 w-5" />
       )}
+      <span className="sr-only">Send message</span>
     </Button>
   );
 }
@@ -39,7 +40,10 @@ function SubmitButton() {
 export default function Home() {
   const [state, formAction] = useFormState(getAiResponse, initialState);
   const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (state.error) {
@@ -48,73 +52,117 @@ export default function Home() {
         title: "Error",
         description: state.error,
       });
+    } else if (state.response) {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), sender: 'ai', text: state.response! },
+      ]);
     }
-  }, [state.error, toast]);
+  }, [state, toast]);
 
-  const handleCopy = () => {
-    if (state.response) {
-      navigator.clipboard.writeText(state.response);
-      toast({
-        title: "Copied!",
-        description: "AI response copied to clipboard.",
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
       });
+    }
+  }, [messages]);
+  
+  const handleFormAction = (formData: FormData) => {
+    const currentPrompt = formData.get("prompt") as string;
+    if (currentPrompt.trim()) {
+      setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: currentPrompt }]);
+      formAction(formData);
+      formRef.current?.reset();
+      setPrompt("");
     }
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 md:p-12">
-      <div className="w-full max-w-3xl space-y-8">
-        <header className="flex flex-col items-center text-center">
-          <TigerLogo className="w-16 h-16 mb-4" />
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            AeonAI Assistant
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Your intelligent assistant for dynamic task handling and generation.
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Try prompts like "What's the weather in London?" or "What's the stock price for GOOGL?".
-          </p>
-        </header>
-
-        <Card className="w-full border-2 border-primary/20 shadow-lg shadow-primary/10">
-          <CardHeader>
-            <CardTitle className="text-xl">Enter Your Prompt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={formAction} className="space-y-4">
-              <Textarea
-                name="prompt"
-                placeholder="e.g., What is the current weather in Paris?"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                required
-                className="min-h-[120px] text-base"
-              />
-              <SubmitButton />
-            </form>
-          </CardContent>
-        </Card>
-
-        {state.response && (
-          <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-7 h-7 text-primary" />
-                <CardTitle className="text-xl">AI Response</CardTitle>
+    <div className="flex flex-col h-screen">
+      <header className="flex items-center gap-4 p-4 border-b bg-card">
+        <TigerLogo className="w-10 h-10" />
+        <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              AeonAI Assistant
+            </h1>
+            <p className="text-sm text-muted-foreground">Online</p>
+        </div>
+      </header>
+      <main className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full" ref={scrollAreaRef}>
+          <div className="p-4 md:p-6 space-y-6">
+            {messages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                    <Bot size={48} className="mb-4"/>
+                    <p className="text-lg">Start the conversation!</p>
+                    <p className="text-sm">I can help you with a variety of tasks. Try asking about the weather or stock prices.</p>
+                </div>
+            )}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  "flex items-start gap-4",
+                  message.sender === 'user' && "justify-end"
+                )}
+              >
+                {message.sender === 'ai' && (
+                  <Avatar className="w-8 h-8 border">
+                    <AvatarFallback><Bot size={16}/></AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn(
+                    "max-w-[75%] rounded-lg px-4 py-2 text-sm",
+                    message.sender === 'user' ? "user-message" : "ai-message"
+                  )}
+                >
+                  <p className="whitespace-pre-wrap">{message.text}</p>
+                </div>
+                {message.sender === 'user' && (
+                  <Avatar className="w-8 h-8 border">
+                    <AvatarFallback><User size={16}/></AvatarFallback>
+                  </Avatar>
+                )}
               </div>
-              <Button variant="ghost" size="icon" onClick={handleCopy} aria-label="Copy response">
-                <Copy className="h-5 w-5" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                {state.response}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </main>
+            ))}
+             {useFormStatus().pending && (
+              <div className="flex items-start gap-4">
+                  <Avatar className="w-8 h-8 border">
+                    <AvatarFallback><Bot size={16}/></AvatarFallback>
+                  </Avatar>
+                  <div className="ai-message rounded-lg px-4 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-0"></div>
+                          <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-150"></div>
+                          <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-300"></div>
+                      </div>
+                  </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </main>
+      <footer className="p-4 border-t bg-card">
+        <form
+          ref={formRef}
+          action={handleFormAction}
+          className="flex items-center gap-2"
+        >
+          <Input
+            name="prompt"
+            placeholder="Type your message..."
+            autoComplete="off"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            required
+            className="flex-1"
+          />
+          <SubmitButton />
+        </form>
+      </footer>
+    </div>
   );
 }

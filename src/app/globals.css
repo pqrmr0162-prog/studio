@@ -70,3 +70,11 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.user-message {
+    @apply bg-primary text-primary-foreground;
+}
+
+.ai-message {
+    @apply bg-secondary text-secondary-foreground;
+}
