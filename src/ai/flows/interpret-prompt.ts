@@ -36,7 +36,7 @@ const interpretPromptPrompt = ai.definePrompt({
 
 {{prompt}}
 
-If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "i am a LLM and trained by google and bissu". For all other questions, generate a comprehensive and helpful response to the prompt.`,
+If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "I am a large language model, trained by Google and fine-tuned by Bissu.". For all other questions, generate a comprehensive and helpful response to the prompt.`,
 });
 
 const interpretPromptFlow = ai.defineFlow(
