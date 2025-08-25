@@ -1,6 +1,6 @@
 "use server";
 
-import { dynamicToolSelection } from "@/ai/flows/dynamic-tool-selection";
+import { interpretPrompt } from "@/ai/flows/interpret-prompt";
 
 interface FormState {
   response: string | null;
@@ -18,7 +18,7 @@ export async function getAiResponse(
   }
 
   try {
-    const result = await dynamicToolSelection(prompt);
+    const result = await interpretPrompt({ prompt });
     return { response: result.response, error: null };
   } catch (error) {
     console.error(error);
