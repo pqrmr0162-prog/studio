@@ -97,9 +97,8 @@ export default function Home() {
             <div className="space-y-6">
               {messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-20">
-                      <Bot size={48} className="mb-4"/>
-                      <p className="text-lg">Start the conversation!</p>
-                      <p className="text-sm">I can help you with a variety of tasks. Try asking about the weather or stock prices.</p>
+                      <TigerLogo className="w-16 h-16 mb-4"/>
+                      <p className="text-lg font-semibold">How can I help you?</p>
                   </div>
               )}
               {messages.map((message) => (
