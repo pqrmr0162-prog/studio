@@ -126,25 +126,25 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-background">
       <div className="flex flex-col flex-1">
-        <header className="flex items-center gap-4 p-4 border-b">
+        <header className="flex items-center gap-2 md:gap-4 p-2 md:p-4 border-b">
           <div className="flex items-center gap-2">
             <TigerLogo className="w-8 h-8"/>
             <h1 className="text-lg font-bold">AeonAI</h1>
           </div>
           <div className="ml-auto">
-            <Button onClick={handleNewChat} variant="outline">
+            <Button onClick={handleNewChat} variant="outline" size="sm">
                 <Plus size={16}/>
-                New Chat
+                <span className="hidden md:inline ml-2">New Chat</span>
             </Button>
           </div>
         </header>
-        <main className="flex-1 flex flex-col p-6">
-            <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
-              <div className="space-y-6 max-w-4xl mx-auto w-full">
+        <main className="flex-1 flex flex-col p-2 md:p-6">
+            <ScrollArea className="flex-1 px-2 md:px-4" ref={scrollAreaRef}>
+              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full">
                 {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-20">
-                        <TigerLogo className="w-16 h-16 mb-4"/>
-                        <p className="text-lg font-semibold">How can I help you?</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
+                        <TigerLogo className="w-12 h-12 md:w-16 md:h-16 mb-4"/>
+                        <p className="text-base md:text-lg font-semibold">How can I help you?</p>
                         <p className="text-xs mt-1">by Bissu</p>
                     </div>
                 )}
@@ -152,18 +152,18 @@ export default function Home() {
                   <div
                     key={message.id}
                     className={cn(
-                      "flex items-start gap-4",
+                      "flex items-start gap-2 md:gap-4",
                       message.sender === 'user' && "justify-end"
                     )}
                   >
                     {message.sender === 'ai' && (
-                      <Avatar className="w-8 h-8 border">
+                      <Avatar className="w-8 h-8 border shrink-0">
                         <AvatarFallback><Bot size={16}/></AvatarFallback>
                       </Avatar>
                     )}
                     <div
                       className={cn(
-                        "max-w-[75%] rounded-2xl px-4 py-3 text-sm",
+                        "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm",
                         message.sender === 'user' ? "user-message" : "ai-message"
                       )}
                     >
@@ -173,20 +173,20 @@ export default function Home() {
                             alt="User upload"
                             width={300}
                             height={300}
-                            className="rounded-lg mb-2"
+                            className="rounded-lg mb-2 max-w-full h-auto"
                         />
                       )}
                       <p className="whitespace-pre-wrap">{message.text}</p>
                     </div>
                     {message.sender === 'user' && (
-                      <Avatar className="w-8 h-8 border">
+                      <Avatar className="w-8 h-8 border shrink-0">
                         <AvatarFallback><User size={16}/></AvatarFallback>
                       </Avatar>
                     )}
                   </div>
                 ))}
                 {useFormStatus().pending && (
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-2 md:gap-4">
                       <Avatar className="w-8 h-8 border">
                         <AvatarFallback><Bot size={16}/></AvatarFallback>
                       </Avatar>
@@ -202,7 +202,7 @@ export default function Home() {
               </div>
             </ScrollArea>
             
-            <footer className="mt-auto pt-4">
+            <footer className="mt-auto pt-2 md:pt-4">
               <div className="max-w-4xl mx-auto w-full">
                 {attachment && (
                     <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
@@ -212,7 +212,7 @@ export default function Home() {
                             <Paperclip className="h-6 w-6" />
                         )}
                         <span className="text-sm truncate">{attachment.name}</span>
-                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6" onClick={handleRemoveAttachment}>
+                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
@@ -220,7 +220,7 @@ export default function Home() {
                 <form
                   ref={formRef}
                   action={handleFormAction}
-                  className="flex items-center gap-4"
+                  className="flex items-center gap-2 md:gap-4"
                 >
                   <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
                     <Paperclip className="h-5 w-5" />
@@ -240,7 +240,7 @@ export default function Home() {
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="flex-1 rounded-full px-5"
+                    className="flex-1 rounded-full px-4"
                   />
                   <SubmitButton />
                 </form>
