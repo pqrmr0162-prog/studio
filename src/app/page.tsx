@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SendHorizonal, User, Bot, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 
 const initialState = {
   response: null,
@@ -86,29 +85,17 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="w-64 flex flex-col p-4 border-r bg-secondary/40">
-        <div className="flex items-center gap-2 mb-4">
-          <TigerLogo className="w-8 h-8"/>
-          <h1 className="text-lg font-bold">AeonAI</h1>
-        </div>
-        <Button onClick={handleNewChat} variant="outline" className="w-full justify-start gap-2">
-            <Plus size={16}/>
-            New Chat
-        </Button>
-        <Separator className="my-4"/>
-        <p className="text-sm text-muted-foreground mb-2">History</p>
-        <ScrollArea className="flex-1">
-            <p className="text-sm text-muted-foreground text-center">No history yet.</p>
-        </ScrollArea>
-      </aside>
-
       <div className="flex flex-col flex-1">
         <header className="flex items-center gap-4 p-4 border-b">
-          <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
-                AeonAI Assistant
-              </h1>
-              <p className="text-sm text-muted-foreground">Online</p>
+          <div className="flex items-center gap-2">
+            <TigerLogo className="w-8 h-8"/>
+            <h1 className="text-lg font-bold">AeonAI</h1>
+          </div>
+          <div className="ml-auto">
+            <Button onClick={handleNewChat} variant="outline">
+                <Plus size={16}/>
+                New Chat
+            </Button>
           </div>
         </header>
         <main className="flex-1 flex flex-col p-6">
