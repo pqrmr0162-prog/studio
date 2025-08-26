@@ -8,13 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader, Settings } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const initialState = {
   response: null,
@@ -27,11 +24,6 @@ interface Message {
   text: string;
   imageUrl?: string;
 }
-
-const availableVoices = [
-    { id: 'en-US-Standard-D', name: 'Male'},
-    { id: 'en-US-Standard-C', name: 'Female'},
-]
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -57,23 +49,16 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
-  const [selectedVoice, setSelectedVoice] = useState('en-US-Standard-D');
-
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
     if (storedTheme) {
       setTheme(storedTheme);
-    }
-    const storedVoice = localStorage.getItem('voice');
-    if (storedVoice) {
-      setSelectedVoice(storedVoice);
     }
   }, []);
   
@@ -84,10 +69,6 @@ export default function Home() {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem('voice', selectedVoice);
-  }, [selectedVoice]);
 
   useEffect(() => {
     if (state.error) {
@@ -180,7 +161,7 @@ export default function Home() {
     
     setLoadingAudio(message.id);
     try {
-        const result = await textToSpeechAction({text: message.text, voice: selectedVoice});
+        const result = await textToSpeechAction({text: message.text});
         if (result.error) {
             toast({
                 variant: "destructive",
@@ -228,34 +209,6 @@ export default function Home() {
                 <Plus size={16}/>
                 <span className="hidden md:inline ml-2">New Chat</span>
             </Button>
-             <Sheet>
-                <SheetTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        <Settings size={20} />
-                        <span className="sr-only">Settings</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent>
-                    <SheetHeader>
-                        <SheetTitle>Settings</SheetTitle>
-                    </SheetHeader>
-                    <div className="py-4">
-                        <Label className="text-sm font-medium">Voice Selection</Label>
-                        <RadioGroup
-                            value={selectedVoice}
-                            onValueChange={setSelectedVoice}
-                            className="mt-2 space-y-2"
-                        >
-                            {availableVoices.map((voice) => (
-                                <div key={voice.id} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={voice.id} id={voice.id} />
-                                    <Label htmlFor={voice.id} className="font-normal">{voice.name}</Label>
-                                </div>
-                            ))}
-                        </RadioGroup>
-                    </div>
-                </SheetContent>
-            </Sheet>
           </div>
         </header>
         <main className="flex-1 flex flex-col p-2 md:p-6">
