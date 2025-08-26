@@ -327,20 +327,24 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { pending } = useFormStatus();
   const isFirstRender = useRef(true);
   
   const handleClientSideSubmit = (formData: FormData) => {
+    if (isSubmitting) return;
+
     const currentPrompt = formData.get("prompt") as string;
     
     if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
         return;
     }
+    
+    setIsSubmitting(true);
     
     const userMessage: Message = {
         id: Date.now(),
@@ -379,47 +383,47 @@ export default function Home() {
         return;
     }
     
-    if (!pending) {
-        if (state.error) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: state.error,
+    setIsSubmitting(false);
+
+    if (state.error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: state.error,
+        });
+        // Revert on error
+        if (editingMessageId === null) {
+            setMessages(prev => prev.slice(0, -1));
+        }
+    } else if (state.response || state.imageUrl) {
+            const newAiMessage: Message = { 
+            id: Date.now(), 
+            sender: 'ai', 
+            text: state.response || "",
+            imageUrl: state.imageUrl || undefined,
+            suggestions: state.suggestions || undefined,
+            sources: state.sources || undefined,
+        };
+        
+        if (editingMessageId !== null) {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                const insertIndex = editedMessageIndex + 1;
+                if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                    newMessages[insertIndex] = newAiMessage;
+                } else {
+                    newMessages.splice(insertIndex, 0, newAiMessage);
+                }
+                return newMessages;
             });
-            // Revert on error
-            if (editingMessageId === null) {
-                setMessages(prev => prev.slice(0, -1));
-            }
-        } else if (state.response || state.imageUrl) {
-             const newAiMessage: Message = { 
-                id: Date.now(), 
-                sender: 'ai', 
-                text: state.response || "",
-                imageUrl: state.imageUrl || undefined,
-                suggestions: state.suggestions || undefined,
-                sources: state.sources || undefined,
-            };
-            
-            if (editingMessageId !== null) {
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                    const insertIndex = editedMessageIndex + 1;
-                    if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
-                        newMessages[insertIndex] = newAiMessage;
-                    } else {
-                        newMessages.splice(insertIndex, 0, newAiMessage);
-                    }
-                    return newMessages;
-                });
-                setEditingMessageId(null);
-            } else {
-                setMessages((prev) => [...prev, newAiMessage]);
-            }
+            setEditingMessageId(null);
+        } else {
+            setMessages((prev) => [...prev, newAiMessage]);
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, pending]);
+  }, [state]);
 
 
   useEffect(() => {
@@ -456,7 +460,7 @@ export default function Home() {
         behavior: 'smooth',
       });
     }
-  }, [messages, pending]);
+  }, [messages, isSubmitting]);
 
   const handleRemoveImage = () => {
     setUploadedImagePreview(null);
@@ -466,7 +470,7 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    if (pending) return;
+    if (isSubmitting) return;
     setPrompt(suggestion);
     setTimeout(() => {
         if (formRef.current) {
@@ -494,7 +498,7 @@ export default function Home() {
   }
 
   const handleEdit = (message: Message) => {
-    if (pending) return;
+    if (isSubmitting) return;
     setEditingMessageId(message.id);
     setPrompt(message.text);
     if (message.imageUrl) {
@@ -506,7 +510,7 @@ export default function Home() {
   }
 
   const handleMicClick = () => {
-    if (pending || isRecording) {
+    if (isSubmitting || isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
       return;
@@ -559,7 +563,22 @@ export default function Home() {
         setUploadedImagePreview(URL.createObjectURL(file));
     }
   };
-
+  
+  // This component will be re-rendered whenever `isSubmitting` changes.
+  // We use this to wrap the actual view components.
+  const FormStatusWrapper = ({ children }: { children: React.ReactNode }) => {
+    return <form
+      ref={formRef}
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleClientSideSubmit(new FormData(e.currentTarget));
+      }}
+      className="contents"
+    >
+      {children}
+    </form>
+  }
+  
   const commonProps = {
     fileInputRef,
     handleFileChange,
@@ -571,16 +590,14 @@ export default function Home() {
     uploadedImagePreview,
     handleRemoveImage,
     formRef,
-    onSubmit: handleClientSideSubmit,
   };
 
-  if (messages.length === 0 && !pending) {
-    return <WelcomeView {...commonProps} />;
-  }
-
-
-  return (
-    <ChatView 
+  const MemoizedWelcomeView = React.memo(function MemoizedWelcomeView() {
+    return <WelcomeView {...commonProps} onSubmit={handleClientSideSubmit} />
+  });
+  
+  const MemoizedChatView = React.memo(function MemoizedChatView() {
+    return <ChatView 
         {...commonProps}
         messages={messages}
         theme={theme}
@@ -590,6 +607,30 @@ export default function Home() {
         handleEdit={handleEdit}
         handleSuggestionClick={handleSuggestionClick}
         viewportRef={viewportRef}
+        onSubmit={handleClientSideSubmit}
     />
+  });
+
+  // Since `useFormStatus` must be used within a form, we create a small
+  // wrapper component that has access to the form's pending state.
+  const AppContent = () => {
+    const { pending } = useFormStatus();
+
+    // We use an effect to sync the form's pending state with our component's state
+    useEffect(() => {
+        setIsSubmitting(pending);
+    }, [pending]);
+
+    if (messages.length === 0 && !pending) {
+        return <MemoizedWelcomeView />;
+    }
+    
+    return <MemoizedChatView />;
+  }
+
+  return (
+    <FormStatusWrapper>
+        <AppContent />
+    </FormStatusWrapper>
   );
 }
