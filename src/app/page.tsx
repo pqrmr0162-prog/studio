@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -48,13 +48,13 @@ function SubmitButton() {
   );
 }
 
-function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formAction }) {
+function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage }) {
     const welcomeFormRef = useRef<HTMLFormElement>(null);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        welcomeFormRef.current?.requestSubmit();
+        welcomeFormRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
       }
     };
     
@@ -70,7 +70,7 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
             <div className="mt-8 w-full">
                 <form
                     ref={welcomeFormRef}
-                    action={formAction}
+                    onSubmit={handleFormSubmit}
                     className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto"
                 >
                     <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
@@ -131,36 +131,33 @@ export default function Home() {
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const submittedPrompt = useRef("");
+  const lastSubmittedPrompt = useRef("");
   const { pending } = useFormStatus();
 
-  useEffect(() => {
-    // This effect runs when the form is submitted
-    // We can get the prompt from the formRef
-    const form = formRef.current || document.querySelector('form');
-    if (!form) return;
-
-    const formData = new FormData(form);
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     const currentPrompt = formData.get("prompt") as string;
     
-    // Only update messages if a new prompt was submitted and it's not pending.
-    // This prevents adding empty messages or duplicates.
-    if (!pending && (currentPrompt || uploadedImage)) {
-      submittedPrompt.current = currentPrompt;
-      if (editingMessageId !== null) {
-          setMessages(prev => {
-              const newMessages = [...prev];
-              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-              if (editedMessageIndex !== -1) {
-                  newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                  // Remove the AI message that followed the edited one
-                  if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                      newMessages.splice(editedMessageIndex + 1, 1);
-                  }
-              }
-              return newMessages;
-          });
-      } else {
+    if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
+        return;
+    }
+
+    lastSubmittedPrompt.current = currentPrompt;
+    
+    if (editingMessageId !== null) {
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                    newMessages.splice(editedMessageIndex + 1, 1);
+                }
+            }
+            return newMessages;
+        });
+    } else {
         const userMessage: Message = {
             id: Date.now(),
             sender: 'user',
@@ -168,13 +165,17 @@ export default function Home() {
             imageUrl: uploadedImagePreview ?? undefined,
         };
         setMessages(prev => {
-            // Remove suggestions from previous AI message
             const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
             return [...newMessages, userMessage];
         });
-      }
     }
-  }, [pending]);
+
+    formAction(formData);
+    setPrompt("");
+    if (!editingMessageId) {
+        handleRemoveImage();
+    }
+  };
 
 
   useEffect(() => {
@@ -210,13 +211,14 @@ export default function Home() {
        setMessages(prev => {
          const lastMessage = prev[prev.length - 1];
          // Only remove the last message if it was the user's optimistic message that failed
-         if (lastMessage?.sender === 'user' && lastMessage.text === submittedPrompt.current) {
+         if (lastMessage?.sender === 'user' && lastMessage.text === lastSubmittedPrompt.current) {
            return prev.slice(0, -1);
          }
          return prev;
        });
 
     } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
+        // Prevent adding empty AI responses if the state was reset
         if (!state.response && !state.imageUrl && (!state.sources || state.sources.length === 0)) {
             return;
         }
@@ -239,17 +241,13 @@ export default function Home() {
               return newMessages;
           });
           setEditingMessageId(null);
+          handleRemoveImage();
       } else {
         setMessages((prev) => [
           ...prev,
           newAiMessage,
         ]);
       }
-      
-      formRef.current?.reset();
-      setPrompt("");
-      handleRemoveImage();
-
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
@@ -275,7 +273,8 @@ export default function Home() {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        formRef.current?.requestSubmit();
+        // Submitting the form will trigger the handleFormSubmit function
+        formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     }
   };
 
@@ -283,7 +282,7 @@ export default function Home() {
     setPrompt(suggestion);
     // A little delay to allow the prompt to update before submitting
     setTimeout(() => {
-        formRef.current?.requestSubmit();
+        formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     }, 100);
   }
 
@@ -373,6 +372,7 @@ export default function Home() {
 
   if (messages.length === 0) {
     return <WelcomeScreen 
+      handleFormSubmit={handleFormSubmit}
       fileInputRef={fileInputRef}
       handleFileChange={handleFileChange}
       textareaRef={textareaRef}
@@ -382,7 +382,6 @@ export default function Home() {
       handleMicClick={handleMicClick}
       uploadedImagePreview={uploadedImagePreview}
       handleRemoveImage={handleRemoveImage}
-      formAction={formAction}
     />;
   }
 
@@ -540,7 +539,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={formAction}
+                onSubmit={handleFormSubmit}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
