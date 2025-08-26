@@ -38,7 +38,7 @@ function SubmitButton() {
   return (
     <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
       {pending ? (
-        <Bot className="h-5 w-5 animate-spin" />
+        <div className="w-5 h-5 border-2 border-background border-t-primary rounded-full animate-spin"></div>
       ) : (
         <SendHorizonal className="h-5 w-5" />
       )}
@@ -83,8 +83,8 @@ export default function Home() {
         title: "Error",
         description: state.error,
       });
-    } else if (state.response || state.imageUrl) {
-      const newAiMessage: Message = { 
+    } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
+       const newAiMessage: Message = { 
         id: Date.now(), 
         sender: 'ai', 
         text: state.response || "",
@@ -104,8 +104,11 @@ export default function Home() {
                     newMessages.splice(editedMessageIndex + 1, 1);
                   }
               }
+               // Add the new AI message after the edited one
+              const insertIndex = editedMessageIndex + 1;
+              newMessages.splice(insertIndex, 0, newAiMessage);
 
-              return [...newMessages, newAiMessage];
+              return newMessages;
           });
           setEditingMessageId(null);
       } else {
