@@ -2,13 +2,13 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { getAiResponse, textToSpeechAction } from "@/app/actions";
+import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -47,14 +47,10 @@ export default function Home() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
-  const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
-  const [loadingAudioId, setLoadingAudioId] = useState<number | null>(null);
-  const [audioCache, setAudioCache] = useState<Record<number, string>>({});
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -148,75 +144,6 @@ export default function Home() {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
 
-  const playAudio = (audioDataUri: string, messageId: number) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-
-    const newAudio = new Audio(audioDataUri);
-    audioRef.current = newAudio;
-
-    newAudio.play();
-    setPlayingAudioId(messageId);
-    newAudio.onended = () => {
-      setPlayingAudioId(null);
-      audioRef.current = null;
-    };
-    newAudio.onerror = () => {
-      setPlayingAudioId(null);
-      setLoadingAudioId(null);
-      toast({
-        variant: "destructive",
-        title: "Audio Error",
-        description: "Could not play the audio file.",
-      });
-    };
-  };
-
-  const handlePlayAudio = async (message: Message) => {
-    if (playingAudioId === message.id && audioRef.current) {
-      audioRef.current.pause();
-      setPlayingAudioId(null);
-      return;
-    }
-
-    if (audioRef.current && !audioRef.current.paused) {
-      audioRef.current.pause();
-      setPlayingAudioId(null);
-    }
-
-    if (audioCache[message.id]) {
-      playAudio(audioCache[message.id], message.id);
-      return;
-    }
-
-    setLoadingAudioId(message.id);
-    try {
-      const result = await textToSpeechAction({ text: message.text });
-      if (result.error) {
-        toast({
-          variant: "destructive",
-          title: "Audio Error",
-          description: result.error,
-        });
-        return;
-      }
-
-      if (result.audioDataUri) {
-        setAudioCache(prev => ({ ...prev, [message.id]: result.audioDataUri! }));
-        playAudio(result.audioDataUri, message.id);
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Audio Error",
-        description: "Failed to generate audio.",
-      });
-    } finally {
-      setLoadingAudioId(null);
-    }
-  };
-  
   return (
     <div className="flex h-screen bg-background">
       <div className="flex flex-col flex-1">
@@ -277,24 +204,6 @@ export default function Home() {
                         />
                       )}
                       <p className="whitespace-pre-wrap">{message.text}</p>
-                       {message.sender === 'ai' && (
-                        <div className="flex justify-end mt-2">
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                                onClick={() => handlePlayAudio(message)}
-                                disabled={loadingAudioId === message.id}
-                            >
-                                {loadingAudioId === message.id ? (
-                                    <Loader className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Volume2 className={cn("h-4 w-4", playingAudioId === message.id && "text-primary")} />
-                                )}
-                                <span className="sr-only">Read aloud</span>
-                            </Button>
-                        </div>
-                       )}
                     </div>
                     {message.sender === 'user' && (
                       <Avatar className="w-8 h-8 border shrink-0">
@@ -372,5 +281,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
