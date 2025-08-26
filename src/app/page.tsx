@@ -1,15 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useMemo } from "react";
+import { useActionState, useEffect, useRef, useState, FormEvent } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -311,264 +310,209 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
       );
 };
 
-
-export default function Home() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useActionState(getAiResponse, initialState);
-  
-  const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [prompt, setPrompt] = useState("");
-  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
-  const [theme, setTheme] = useState('dark');
-  const [isRecording, setIsRecording] = useState(false);
-  
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isFirstRender = useRef(true);
-  const isSubmitting = useRef(false);
-  
-  const handleClientSideSubmit = (formData: FormData) => {
-    if (isSubmitting.current) return;
-
-    const currentPrompt = formData.get("prompt") as string;
-    
-    if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
-        return;
-    }
-    
-    isSubmitting.current = true;
-    
-    const userMessage: Message = {
-        id: Date.now(),
-        sender: 'user',
-        text: currentPrompt,
-        imageUrl: uploadedImagePreview ?? undefined,
-    };
-
-    if (editingMessageId !== null) {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-            if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                    newMessages.splice(editedMessageIndex + 1, 1);
-                }
-            }
-            return newMessages;
-        });
-    } else {
-        setMessages(prev => {
-            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-            return [...newMessages, userMessage];
-        });
-    }
-
-    setPrompt("");
-    handleRemoveImage();
-    formAction(formData);
-  };
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-        isFirstRender.current = false;
-        return;
-    }
-    
-    isSubmitting.current = false;
-
-    if (state.error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: state.error,
-        });
-        // Revert on error
-        if (editingMessageId === null) {
-            setMessages(prev => prev.slice(0, -1));
-        }
-    } else if (state.response || state.imageUrl) {
-            const newAiMessage: Message = { 
-            id: Date.now(), 
-            sender: 'ai', 
-            text: state.response || "",
-            imageUrl: state.imageUrl || undefined,
-            suggestions: state.suggestions || undefined,
-            sources: state.sources || undefined,
-        };
-        
-        if (editingMessageId !== null) {
-            setMessages(prev => {
-                const newMessages = [...prev];
-                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                const insertIndex = editedMessageIndex + 1;
-                if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
-                    newMessages[insertIndex] = newAiMessage;
-                } else {
-                    newMessages.splice(insertIndex, 0, newAiMessage);
-                }
-                return newMessages;
-            });
-            setEditingMessageId(null);
-        } else {
-            setMessages((prev) => [...prev, newAiMessage]);
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${scrollHeight}px`;
-    }
-  }, [prompt]);
-
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('theme');
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-    } else {
-      setTheme('light');
-    }
-  }, []);
-  
-  useEffect(() => {
-    if (theme) {
-      document.documentElement.classList.remove('light', 'dark');
-      document.documentElement.classList.add(theme);
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({
-        top: viewportRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, [messages, isSubmitting]);
-
-  const handleRemoveImage = () => {
-    setUploadedImagePreview(null);
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    if (isSubmitting.current) return;
-    setPrompt(suggestion);
-    setTimeout(() => {
-        if (formRef.current) {
-            const formData = new FormData(formRef.current);
-            formData.set('prompt', suggestion);
-            handleClientSideSubmit(formData);
-        }
-    }, 100);
-  }
-
-  const handleNewChat = () => {
-    setMessages([]);
-    handleRemoveImage();
-    setEditingMessageId(null);
-  };
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
-  };
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "The message has been copied to your clipboard.",
-    });
-  }
-
-  const handleEdit = (message: Message) => {
-    if (isSubmitting.current) return;
-    setEditingMessageId(message.id);
-    setPrompt(message.text);
-    if (message.imageUrl) {
-        setUploadedImagePreview(message.imageUrl);
-    } else {
-        handleRemoveImage();
-    }
-    textareaRef.current?.focus();
-  }
-
-  const handleMicClick = () => {
-    if (isSubmitting.current || isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({
-        variant: "destructive",
-        title: "Unsupported Browser",
-        description: "Speech recognition is not supported in your browser.",
-      });
-      return;
-    }
-
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = false;
-    recognitionRef.current.lang = 'en-IN';
-
-    recognitionRef.current.onstart = () => {
-      setIsRecording(true);
-      toast({ title: "Listening..." });
-    };
-
-    recognitionRef.current.onend = () => {
-      setIsRecording(false);
-    };
-
-    recognitionRef.current.onerror = (event: any) => {
-      setIsRecording(false);
-      toast({
-        variant: "destructive",
-        title: "Speech Recognition Error",
-        description: event.error,
-      });
-    };
-
-    recognitionRef.current.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setPrompt(transcript);
-    };
-    
-    recognitionRef.current.start();
-  };
-  
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-        setUploadedImagePreview(URL.createObjectURL(file));
-    }
-  };
-  
-  const AppContent = () => {
+const AppContent = ({
+    formRef,
+    state,
+    formAction,
+    messages,
+    setMessages,
+    prompt,
+    setPrompt,
+    editingMessageId,
+    setEditingMessageId,
+    uploadedImagePreview,
+    setUploadedImagePreview,
+    theme,
+    setTheme,
+    isRecording,
+    setIsRecording,
+    handleClientSideSubmit
+}) => {
     const { pending } = useFormStatus();
+    const { toast } = useToast();
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const recognitionRef = useRef<any>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const isFirstRender = useRef(true);
+    const isSubmitting = useRef(false);
 
     useEffect(() => {
         isSubmitting.current = pending;
     }, [pending]);
+    
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
 
+        if (state.error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: state.error,
+            });
+            if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
+                setMessages(prev => prev.slice(0, -1));
+            }
+        } else if (state.response || state.imageUrl) {
+            const newAiMessage: Message = {
+                id: Date.now(),
+                sender: 'ai',
+                text: state.response || "",
+                imageUrl: state.imageUrl || undefined,
+                suggestions: state.suggestions || undefined,
+                sources: state.sources || undefined,
+            };
+
+            if (editingMessageId !== null) {
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                    const insertIndex = editedMessageIndex + 1;
+                    if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                        newMessages[insertIndex] = newAiMessage;
+                    } else {
+                        newMessages.splice(insertIndex, 0, newAiMessage);
+                    }
+                    return newMessages;
+                });
+                setEditingMessageId(null);
+            } else {
+                setMessages((prev) => [...prev, newAiMessage]);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state]);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            textareaRef.current.style.height = `${scrollHeight}px`;
+        }
+    }, [prompt]);
+
+    useEffect(() => {
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({
+                top: viewportRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [messages, pending]);
+
+    const handleRemoveImage = () => {
+        setUploadedImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleSuggestionClick = (suggestion: string) => {
+        if (pending) return;
+        setPrompt(suggestion);
+        setTimeout(() => {
+            if (formRef.current) {
+                const formData = new FormData(formRef.current);
+                formData.set('prompt', suggestion);
+                handleClientSideSubmit(formData);
+            }
+        }, 100);
+    }
+
+    const handleNewChat = () => {
+        setMessages([]);
+        handleRemoveImage();
+        setEditingMessageId(null);
+    };
+
+    const toggleTheme = () => {
+        setTheme(prevTheme => {
+            const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(newTheme);
+            return newTheme;
+        });
+    };
+
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Copied!",
+            description: "The message has been copied to your clipboard.",
+        });
+    }
+
+    const handleEdit = (message: Message) => {
+        if (pending) return;
+        setEditingMessageId(message.id);
+        setPrompt(message.text);
+        if (message.imageUrl) {
+            setUploadedImagePreview(message.imageUrl);
+        } else {
+            handleRemoveImage();
+        }
+        textareaRef.current?.focus();
+    }
+
+    const handleMicClick = () => {
+        if (pending || isRecording) {
+            recognitionRef.current?.stop();
+            setIsRecording(false);
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            toast({
+                variant: "destructive",
+                title: "Unsupported Browser",
+                description: "Speech recognition is not supported in your browser.",
+            });
+            return;
+        }
+
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-IN';
+
+        recognitionRef.current.onstart = () => {
+            setIsRecording(true);
+            toast({ title: "Listening..." });
+        };
+
+        recognitionRef.current.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            setIsRecording(false);
+            toast({
+                variant: "destructive",
+                title: "Speech Recognition Error",
+                description: event.error,
+            });
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setPrompt(transcript);
+        };
+
+        recognitionRef.current.start();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setUploadedImagePreview(URL.createObjectURL(file));
+        }
+    };
+    
     const commonProps = {
         fileInputRef,
         handleFileChange,
@@ -588,7 +532,7 @@ export default function Home() {
         return <WelcomeView {...commonProps} />;
     }
     
-    return <ChatView 
+    return <ChatView
         {...commonProps}
         messages={messages}
         theme={theme}
@@ -599,18 +543,107 @@ export default function Home() {
         handleSuggestionClick={handleSuggestionClick}
         viewportRef={viewportRef}
     />
-  }
+}
 
-  return (
-    <form
-      ref={formRef}
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleClientSideSubmit(new FormData(e.currentTarget));
-      }}
-      className="contents"
-    >
-      <AppContent />
-    </form>
-  );
+export default function Home() {
+    const formRef = useRef<HTMLFormElement>(null);
+    const [state, formAction] = useActionState(getAiResponse, initialState);
+    
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [prompt, setPrompt] = useState("");
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [theme, setTheme] = useState('dark');
+    const [isRecording, setIsRecording] = useState(false);
+    const isSubmitting = useRef(false);
+
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(storedTheme);
+        document.documentElement.classList.add(storedTheme);
+    }, []);
+
+    const handleClientSideSubmit = (formData: FormData) => {
+        if (isSubmitting.current) return;
+
+        const currentPrompt = formData.get("prompt") as string;
+        
+        if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
+            return;
+        }
+
+        isSubmitting.current = true;
+        
+        const userMessage: Message = {
+            id: Date.now(),
+            sender: 'user',
+            text: currentPrompt,
+            imageUrl: uploadedImagePreview ?? undefined,
+        };
+
+        if (editingMessageId !== null) {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                if (editedMessageIndex !== -1) {
+                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                    if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                        newMessages.splice(editedMessageIndex + 1, 1);
+                    }
+                }
+                return newMessages;
+            });
+        } else {
+            setMessages(prev => {
+                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+                return [...newMessages, userMessage];
+            });
+        }
+
+        setPrompt("");
+        setUploadedImagePreview(null);
+        if (formRef.current) {
+            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
+            if (fileInput) fileInput.value = "";
+        }
+        
+        formAction(formData);
+
+        // This is a bit of a hack to reset the submitting flag after the action is dispatched
+        // useFormStatus is more reliable for this
+        setTimeout(() => {
+            isSubmitting.current = false;
+        }, 100);
+    };
+
+    return (
+        <form
+            ref={formRef}
+            action={formAction}
+            onSubmit={(e) => {
+                e.preventDefault();
+                handleClientSideSubmit(new FormData(e.currentTarget));
+            }}
+            className="contents"
+        >
+            <AppContent
+                formRef={formRef}
+                state={state}
+                formAction={formAction}
+                messages={messages}
+                setMessages={setMessages}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                editingMessageId={editingMessageId}
+                setEditingMessageId={setEditingMessageId}
+                uploadedImagePreview={uploadedImagePreview}
+                setUploadedImagePreview={setUploadedImagePreview}
+                theme={theme}
+                setTheme={setTheme}
+                isRecording={isRecording}
+                setIsRecording={setIsRecording}
+                handleClientSideSubmit={handleClientSideSubmit}
+            />
+        </form>
+    );
 }
