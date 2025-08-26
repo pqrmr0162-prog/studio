@@ -66,7 +66,7 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
             <div className="w-full max-w-2xl">
                 <div className="flex flex-col items-center justify-center gap-2 mb-4">
                     <CrowLogo className="w-28 h-28"/>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">AeonAI</h1>
+                    <h1 className="text-3xl sm:text-4xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
@@ -81,7 +81,7 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
                         <Textarea
                             ref={textareaRef}
                             name="prompt"
-                            placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                            placeholder="Message AeonAI..."
                             autoComplete="off"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
@@ -292,7 +292,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                         <Textarea
                         ref={textareaRef}
                         name="prompt"
-                        placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                        placeholder="Message AeonAI..."
                         autoComplete="off"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
@@ -314,11 +314,12 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
       );
 };
 
+
 function AppContent({
     state,
     formAction,
-    pending,
 }) {
+    const { pending } = useFormStatus();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
@@ -402,9 +403,11 @@ function AppContent({
         }
     }, [messages, pending]);
 
-    const handleClientSideSubmit = (formData: FormData) => {
+    const handleClientSideSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
         if (pending) return;
 
+        const formData = new FormData(event.currentTarget);
         const currentPrompt = formData.get("prompt") as string;
         
         if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
@@ -591,29 +594,26 @@ function AppContent({
     />
 }
 
-// Wrapper component to provide form status
-const FormStatusWrapper = ({ children }) => {
-    const { pending } = useFormStatus();
-    return children(pending);
-};
-
 export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
     return (
         <form
+            onSubmit={e => {
+                // This form submission is now handled by handleClientSideSubmit,
+                // which calls formAction manually. We prevent default here
+                // to avoid a double submission.
+                e.preventDefault();
+            }}
+            // The `action` attribute is still needed for progressive enhancement,
+            // but our client-side logic will take precedence.
             action={formAction}
             className="contents"
         >
-            <FormStatusWrapper>
-                {(pending) => (
-                    <AppContent
-                        state={state}
-                        formAction={formAction}
-                        pending={pending}
-                    />
-                )}
-            </FormStatusWrapper>
+            <AppContent
+                state={state}
+                formAction={formAction}
+            />
         </form>
     );
 }
