@@ -35,28 +35,28 @@ interface Message {
   sources?: { title: string; url: string }[];
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
-      {pending ? (
-        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current"></div>
-      ) : (
-        <SendHorizonal className="h-5 w-5" />
-      )}
-      <span className="sr-only">Send message</span>
-    </Button>
-  );
+function SubmitButton({ disabled }: { disabled: boolean }) {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full">
+            {pending ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current"></div>
+            ) : (
+                <SendHorizonal className="h-5 w-5" />
+            )}
+            <span className="sr-only">Send message</span>
+        </Button>
+    );
 }
 
-const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
+const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
+    const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
@@ -70,14 +70,13 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
         window.addEventListener('resize', adjustTextareaHeight);
         return () => window.removeEventListener('resize', adjustTextareaHeight);
     }, [adjustTextareaHeight, prompt]);
-
-
+    
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
+        // Trigger the form submission by programmatically clicking the submit button
         if (formRef.current) {
-          const formData = new FormData(formRef.current);
-          onFormSubmit(formData);
+          formRef.current.requestSubmit();
         }
       }
     };
@@ -145,7 +144,48 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
         recognitionRef.current.start();
     };
 
+    return (
+      <div className="w-full">
+        {uploadedImagePreview && (
+          <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
+            <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+            <span className="text-sm truncate">Image attached</span>
+            <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        <div className="relative flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
+          <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+            <Paperclip className="h-5 w-5" />
+            <span className="sr-only">Upload file</span>
+          </Button>
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
 
+          <Textarea
+            ref={textareaRef}
+            name="prompt"
+            placeholder="Message AeonAI..."
+            autoComplete="off"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
+            rows={1}
+            disabled={pending}
+          />
+          <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+            <Mic className="h-5 w-5" />
+            <span className="sr-only">Use microphone</span>
+          </Button>
+          <SubmitButton disabled={!prompt.trim() && !uploadedImagePreview}/>
+        </div>
+      </div>
+    );
+};
+
+
+const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     return (
         <div className="flex flex-col h-screen bg-background p-4 md:p-6 lg:p-8">
             <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
@@ -154,43 +194,16 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
                         <CrowLogo className="w-28 h-28 sm:w-32 sm:h-32"/>
                         <h1 className="text-3xl sm:text-4xl font-bold">AeonAI</h1>
                     </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
-                <div className="mt-8 w-full">
-                    <div className="relative flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
-                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                            <Paperclip className="h-5 w-5" />
-                            <span className="sr-only">Upload file</span>
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
-        
-                        <Textarea
-                            ref={textareaRef}
-                            name="prompt"
-                            placeholder="Message AeonAI..."
-                            autoComplete="off"
-                            value={prompt}
-                            onChange={(e) => {setPrompt(e.target.value);}}
-                            onKeyDown={handleKeyDown}
-                            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
-                            rows={1}
-                            disabled={pending}
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
+                    <div className="mt-8 w-full">
+                       <MessageInput 
+                          prompt={prompt} 
+                          setPrompt={setPrompt} 
+                          formRef={formRef} 
+                          uploadedImagePreview={uploadedImagePreview}
+                          setUploadedImagePreview={setUploadedImagePreview}
                         />
-                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                            <Mic className="h-5 w-5" />
-                            <span className="sr-only">Use microphone</span>
-                        </Button>
-                        <SubmitButton />
                     </div>
-                    {uploadedImagePreview && (
-                        <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
-                            <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                            <span className="text-sm truncate">Image attached</span>
-                            <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-                </div>
                 </div>
             </main>
             <footer className="text-center p-4 text-xs text-muted-foreground">
@@ -200,26 +213,12 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
     );
 };
 
-const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef }) => {
+const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
     const [theme, setTheme] = useState('dark');
-
-    const handleRemoveImage = useCallback(() => {
-        setUploadedImagePreview(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    }, []);
     
     const useChatActions = () => {
-        const { toast } = useToast();
-
         const handleCopy = (text: string) => {
             navigator.clipboard.writeText(text);
             toast({
@@ -232,25 +231,34 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             if (pending) return;
             setEditingMessageId(message.id);
             setPrompt(message.text);
+            
+            // Focus textarea after setting prompt
+            setTimeout(() => {
+                const textarea = formRef.current?.querySelector('textarea');
+                textarea?.focus();
+            }, 0);
         };
         
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
-            const newPrompt = suggestion;
-            setPrompt(newPrompt);
+            setPrompt(suggestion);
             
-            const formData = new FormData();
-            formData.append('prompt', newPrompt);
-            
+            // Submit the form with the suggestion
             setTimeout(() => {
+                const formData = new FormData();
+                formData.append('prompt', suggestion);
                 onFormSubmit(formData);
-            }, 100);
+            }, 0);
         };
         
         const handleNewChat = () => {
             setMessages([]);
             setPrompt("");
             setEditingMessageId(null);
+            setUploadedImagePreview(null);
+            if (formRef.current) {
+              formRef.current.reset();
+            }
         };
 
         return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
@@ -263,36 +271,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         setTheme(storedTheme);
         document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     }, []);
-    
-    const adjustTextareaHeight = useCallback(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, []);
-
-    useEffect(() => {
-        adjustTextareaHeight();
-        window.addEventListener('resize', adjustTextareaHeight);
-        return () => window.removeEventListener('resize', adjustTextareaHeight);
-    }, [adjustTextareaHeight, prompt]);
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
-          event.preventDefault();
-          if (formRef.current) {
-            const formData = new FormData(formRef.current);
-            onFormSubmit(formData);
-          }
-      }
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setUploadedImagePreview(URL.createObjectURL(file));
-        }
-    };
 
     const toggleTheme = () => {
         setTheme(prevTheme => {
@@ -303,55 +281,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         });
     };
 
-    const handleMicClick = () => {
-        if (pending) return;
-        
-        if (isRecording) {
-            recognitionRef.current?.stop();
-            return;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            toast({
-                variant: "destructive",
-                title: "Unsupported Browser",
-                description: "Speech recognition is not supported in your browser.",
-            });
-            return;
-        }
-
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-IN';
-
-        recognitionRef.current.onstart = () => {
-            setIsRecording(true);
-            toast({ title: "Listening..." });
-        };
-
-        recognitionRef.current.onend = () => {
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            setIsRecording(false);
-            toast({
-                variant: "destructive",
-                title: "Speech Recognition Error",
-                description: event.error,
-            });
-        };
-
-        recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setPrompt(transcript);
-        };
-
-        recognitionRef.current.start();
-    };
-    
     return (
         <div className="flex flex-col h-screen bg-background">
             <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 border-b">
@@ -495,42 +424,13 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 sm:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <div className="max-w-4xl mx-auto w-full">
-                    {uploadedImagePreview && (
-                        <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
-                            <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                            <span className="text-sm truncate">Image attached</span>
-                            <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-                    <div className="relative flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
-                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                            <Paperclip className="h-5 w-5" />
-                            <span className="sr-only">Upload file</span>
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
-
-                        <Textarea
-                        ref={textareaRef}
-                        name="prompt"
-                        placeholder="Message AeonAI..."
-                        autoComplete="off"
-                        value={prompt}
-                        onChange={(e) => {setPrompt(e.target.value);}}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
-                        rows={1}
-                        disabled={pending}
-                        />
-                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                            <Mic className="h-5 w-5" />
-                            <span className="sr-only">Use microphone</span>
-                        </Button>
-                        <SubmitButton />
-                    </div>
-                </div>
+              <MessageInput 
+                prompt={prompt} 
+                setPrompt={setPrompt} 
+                formRef={formRef}
+                uploadedImagePreview={uploadedImagePreview}
+                setUploadedImagePreview={setUploadedImagePreview}
+              />
             </footer>
         </div>
       );
@@ -540,27 +440,32 @@ function AppContent({ state, formAction }) {
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
-    const initialToastShown = useRef(false);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    
     const [isPending, startTransition] = useTransition();
 
+    // This is the primary effect for handling AI responses and errors
     useEffect(() => {
-        if (!state) return;
-    
-        if (state.error && initialToastShown.current) {
+        if (!state) return; // Initial render, do nothing
+        
+        // Don't process if the form is pending (avoids race conditions)
+        if (isPending) return;
+
+        if (state.error) {
             toast({
                 variant: "destructive",
                 title: "Error",
                 description: state.error,
             });
+            // If there was an error, remove the last user message that caused it
             if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
                 setMessages(prev => prev.slice(0, -1));
             }
-        } else if ((state.response || state.imageUrl) && initialToastShown.current) {
+        } else if (state.response || state.imageUrl) {
             const newAiMessage: Message = {
                 id: Date.now(),
                 sender: 'ai',
@@ -571,26 +476,29 @@ function AppContent({ state, formAction }) {
             };
 
             if (editingMessageId !== null) {
+                // If editing, replace the placeholder for the AI response
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                     if (editedMessageIndex !== -1) {
-                        newMessages[editedMessageIndex + 1] = newAiMessage;
+                         // Replace the old AI message if it exists, otherwise add a new one
+                        if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
+                            newMessages[editedMessageIndex + 1] = newAiMessage;
+                        } else {
+                            newMessages.splice(editedMessageIndex + 1, 0, newAiMessage);
+                        }
                     }
                     return newMessages;
                 });
                 setEditingMessageId(null);
             } else {
+                // If not editing, just add the new AI message
                 setMessages((prev) => [...prev, newAiMessage]);
             }
         }
-        
-        if (!initialToastShown.current) {
-          initialToastShown.current = true;
-        }
+    }, [state, isPending]);
 
-    }, [state, toast, editingMessageId, messages]);
-
+    // Effect for auto-scrolling
     useEffect(() => {
         if (viewportRef.current) {
             viewportRef.current.scrollTo({
@@ -600,13 +508,12 @@ function AppContent({ state, formAction }) {
         }
     }, [messages, isPending]);
 
-    const handleFormSubmit = useCallback((formData: FormData) => {
-        if (isPending) return;
 
+    const handleFormSubmit = (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
         const uploadedFile = formData.get("uploadedFile") as File;
-        
-        if ((!currentPrompt || currentPrompt.trim().length === 0) && (!uploadedFile || uploadedFile.size === 0)) {
+
+        if (!currentPrompt?.trim() && (!uploadedFile || uploadedFile.size === 0)) {
             return;
         }
 
@@ -616,55 +523,48 @@ function AppContent({ state, formAction }) {
             text: currentPrompt,
             imageUrl: uploadedFile && uploadedFile.size > 0 ? URL.createObjectURL(uploadedFile) : undefined,
         };
-
-        if (editingMessageId !== null) {
-            setMessages(prev => {
-                const newMessages = [...prev];
-                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                if (editedMessageIndex !== -1) {
-                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: userMessage.imageUrl || newMessages[editedMessageIndex].imageUrl };
-                    if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                        // Invalidate the old AI response
-                        newMessages.splice(editedMessageIndex + 1, 1);
-                    }
-                }
-                return newMessages;
-            });
-        } else {
-             setMessages(prev => {
-                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-                return [...newMessages, userMessage];
-            });
-        }
         
         startTransition(() => {
-            formAction(formData);
-        });
-        
-        setPrompt("");
-        if(formRef.current) {
-            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = "";
-            
-            const textarea = formRef.current.querySelector('textarea');
-            if(textarea) {
-              textarea.style.height = 'auto'; 
+            if (editingMessageId !== null) {
+                 setMessages(prev => {
+                    const newMessages = [...prev];
+                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                    if (editedMessageIndex !== -1) {
+                        newMessages[editedMessageIndex] = { ...userMessage, id: editingMessageId };
+                         if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
+                             newMessages.splice(editedMessageIndex + 1, 1);
+                         }
+                    }
+                    return newMessages;
+                });
+            } else {
+                 setMessages(prev => {
+                    const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+                    return [...newMessages, userMessage];
+                });
             }
-        }
-        
-    }, [isPending, editingMessageId, formAction, setMessages, setPrompt, setEditingMessageId, startTransition]);
-    
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        handleFormSubmit(formData);
+
+            formAction(formData);
+
+            setPrompt("");
+            setUploadedImagePreview(null);
+            if (formRef.current) {
+                formRef.current.reset();
+            }
+        });
     };
 
-
     return (
-        <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="contents">
+        <form ref={formRef} action={handleFormSubmit} className="contents">
             {messages.length === 0 && !isPending ? (
-                 <WelcomeView onFormSubmit={handleFormSubmit} prompt={prompt} setPrompt={setPrompt} formRef={formRef} />
+                <WelcomeView 
+                    setPrompt={setPrompt} 
+                    prompt={prompt} 
+                    formRef={formRef}
+                    uploadedImagePreview={uploadedImagePreview}
+                    setUploadedImagePreview={setUploadedImagePreview}
+                    onFormSubmit={handleFormSubmit}
+                />
             ) : (
                 <ChatView
                     messages={messages}
@@ -676,20 +576,17 @@ function AppContent({ state, formAction }) {
                     editingMessageId={editingMessageId}
                     setEditingMessageId={setEditingMessageId}
                     formRef={formRef}
+                    uploadedImagePreview={uploadedImagePreview}
+                    setUploadedImagePreview={setUploadedImagePreview}
                 />
             )}
         </form>
-    )
+    );
 }
 
 function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
-
-    return (
-      <AppContent state={state} formAction={formAction} />
-    );
+    return <AppContent state={state} formAction={formAction} />;
 }
 
 export default Home;
-
-    
