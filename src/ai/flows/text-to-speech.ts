@@ -75,7 +75,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: voice || 'Procyon'},
+            prebuiltVoiceConfig: {voiceName: voice || 'en-US-Standard-D'},
           },
         },
       },
@@ -98,3 +98,5 @@ const textToSpeechFlow = ai.defineFlow(
     };
   }
 );
+
+    

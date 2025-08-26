@@ -29,8 +29,8 @@ interface Message {
 }
 
 const availableVoices = [
-    { id: 'Procyon', name: 'Male'},
-    { id: 'Lyra', name: 'Female'},
+    { id: 'en-US-Standard-D', name: 'Male'},
+    { id: 'en-US-Standard-C', name: 'Female'},
 ]
 
 function SubmitButton() {
@@ -57,7 +57,7 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
-  const [selectedVoice, setSelectedVoice] = useState('Procyon');
+  const [selectedVoice, setSelectedVoice] = useState('en-US-Standard-D');
 
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -394,3 +394,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
