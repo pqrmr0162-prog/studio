@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +47,59 @@ function SubmitButton() {
     </Button>
   );
 }
+
+const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage }) => (
+  <div className="flex flex-col h-screen bg-background">
+     <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+       <div className="w-full max-w-2xl">
+         <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
+         <h1 className="text-2xl md:text-3xl font-bold">How can I help you today?</h1>
+         <div className="mt-8">
+           <form
+               ref={formRef}
+               action={handleFormSubmit}
+               className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
+           >
+               <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                   <Paperclip className="h-5 w-5" />
+                   <span className="sr-only">Upload file</span>
+               </Button>
+               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
+
+               <Textarea
+                 ref={textareaRef}
+                 name="prompt"
+                 placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                 autoComplete="off"
+                 value={prompt}
+                 onChange={(e) => setPrompt(e.target.value)}
+                 className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                 rows={1}
+               />
+               <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                   <Mic className="h-5 w-5" />
+                   <span className="sr-only">Use microphone</span>
+               </Button>
+               <SubmitButton />
+           </form>
+           {uploadedImagePreview && (
+               <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
+                   <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                   <span className="text-sm truncate">Image attached</span>
+                   <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
+                       <X className="h-4 w-4" />
+                   </Button>
+               </div>
+           )}
+         </div>
+       </div>
+     </main>
+     <footer className="text-center p-4 text-xs text-muted-foreground">
+       by Bissu
+     </footer>
+   </div>
+);
+
 
 export default function Home() {
   const [state, formAction] = useActionState(getAiResponse, initialState);
@@ -288,61 +340,20 @@ export default function Home() {
     }
   };
 
-  const WelcomeScreen = () => (
-     <div className="flex flex-col h-screen bg-background">
-        <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
-          <div className="w-full max-w-2xl">
-            <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
-            <h1 className="text-2xl md:text-3xl font-bold">How can I help you today?</h1>
-            <div className="mt-8">
-              <form
-                  ref={formRef}
-                  action={handleFormSubmit}
-                  className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
-              >
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                      <Paperclip className="h-5 w-5" />
-                      <span className="sr-only">Upload file</span>
-                  </Button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
-
-                  <Textarea
-                    ref={textareaRef}
-                    name="prompt"
-                    placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
-                    autoComplete="off"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
-                    rows={1}
-                  />
-                  <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
-                      <Mic className="h-5 w-5" />
-                      <span className="sr-only">Use microphone</span>
-                  </Button>
-                  <SubmitButton />
-              </form>
-              {uploadedImagePreview && (
-                  <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
-                      <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                      <span className="text-sm truncate">Image attached</span>
-                      <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
-                          <X className="h-4 w-4" />
-                      </Button>
-                  </div>
-              )}
-            </div>
-          </div>
-        </main>
-        <footer className="text-center p-4 text-xs text-muted-foreground">
-          by Bissu
-        </footer>
-      </div>
-  );
-
-
   if (messages.length === 0) {
-    return <WelcomeScreen />;
+    return <WelcomeScreen 
+      formRef={formRef}
+      handleFormSubmit={handleFormSubmit}
+      fileInputRef={fileInputRef}
+      handleFileChange={handleFileChange}
+      textareaRef={textareaRef}
+      prompt={prompt}
+      setPrompt={setPrompt}
+      isRecording={isRecording}
+      handleMicClick={handleMicClick}
+      uploadedImagePreview={uploadedImagePreview}
+      handleRemoveImage={handleRemoveImage}
+    />;
   }
 
   return (
@@ -369,7 +380,6 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6 pb-24 md:pb-28">
-                {messages.length === 0 && <WelcomeScreen />}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -534,5 +544,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
