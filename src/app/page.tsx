@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useRef, useState, FormEvent } from "react";
+import { useActionState, useEffect, useRef, useState, FormEvent, useCallback } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -197,7 +197,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
     );
 };
 
-const ChatView = ({ messages, prompt, setPrompt, onFormSubmit, viewportRef }) => {
+const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId }) => {
     const { pending } = useFormStatus();
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -207,7 +207,51 @@ const ChatView = ({ messages, prompt, setPrompt, onFormSubmit, viewportRef }) =>
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
     const [theme, setTheme] = useState('dark');
-    const { handleCopy, handleEdit, handleSuggestionClick, handleNewChat } = useChatActions({ setPrompt, setMessages, setEditingMessageId });
+
+    const useChatActions = () => {
+        const handleCopy = (text: string) => {
+            navigator.clipboard.writeText(text);
+            toast({
+                title: "Copied!",
+                description: "The message has been copied to your clipboard.",
+            });
+        };
+    
+        const handleEdit = (message: Message, handleRemoveImage: () => void) => {
+            if (pending) return;
+            setEditingMessageId(message.id);
+            setPrompt(message.text);
+            if (message.imageUrl) {
+                toast({ title: "Note", description: "Editing a message with an image is not fully supported. Please re-attach the image if needed."});
+                handleRemoveImage();
+            } else {
+                handleRemoveImage();
+            }
+        };
+    
+        const handleSuggestionClick = (suggestion: string) => {
+            if (pending) return;
+            setPrompt(suggestion);
+            setTimeout(() => {
+                // Use a ref to the form to submit, assuming the form has a ref
+                if (formRef.current) {
+                  formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }, 100);
+        };
+    
+        const handleNewChat = (handleRemoveImage: () => void) => {
+            setMessages([]);
+            setPrompt("");
+            handleRemoveImage();
+            setEditingMessageId(null);
+        };
+    
+        return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
+    }
+
+    const { handleCopy, handleEdit, handleSuggestionClick, handleNewChat } = useChatActions();
+
 
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'dark';
@@ -241,12 +285,12 @@ const ChatView = ({ messages, prompt, setPrompt, onFormSubmit, viewportRef }) =>
         }
     };
 
-    const handleRemoveImage = () => {
+    const handleRemoveImage = useCallback(() => {
         setUploadedImagePreview(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
-    };
+    }, []);
 
     const toggleTheme = () => {
         setTheme(prevTheme => {
@@ -493,54 +537,6 @@ const ChatView = ({ messages, prompt, setPrompt, onFormSubmit, viewportRef }) =>
       );
 };
 
-
-function useChatActions({ setPrompt, setMessages, setEditingMessageId }) {
-    const { toast } = useToast();
-    const { pending } = useFormStatus();
-
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: "Copied!",
-            description: "The message has been copied to your clipboard.",
-        });
-    };
-
-    const handleEdit = (message: Message, handleRemoveImage: () => void) => {
-        if (pending) return;
-        setEditingMessageId(message.id);
-        setPrompt(message.text);
-        if (message.imageUrl) {
-            // This is a simplification. In a real app, you'd need to handle the file object.
-            // For now, we just indicate that an image was there, but can't re-upload it.
-            toast({ title: "Note", description: "Editing a message with an image is not fully supported. Please re-attach the image if needed."});
-            handleRemoveImage();
-        } else {
-            handleRemoveImage();
-        }
-    };
-
-    const handleSuggestionClick = (suggestion: string) => {
-        if (pending) return;
-        setPrompt(suggestion);
-        setTimeout(() => {
-            const form = document.querySelector('form');
-            if (form) {
-                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-            }
-        }, 100);
-    };
-
-    const handleNewChat = (handleRemoveImage: () => void) => {
-        setMessages([]);
-        handleRemoveImage();
-        setEditingMessageId(null);
-    };
-
-    return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
-}
-
-
 function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
@@ -630,6 +626,7 @@ function AppContent({ state, formAction }) {
                 const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                 if (editedMessageIndex !== -1) {
                     newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: userMessage.imageUrl || newMessages[editedMessageIndex].imageUrl };
+                    // Remove the next AI message if it exists
                     if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
                         newMessages.splice(editedMessageIndex + 1, 1);
                     }
@@ -638,6 +635,7 @@ function AppContent({ state, formAction }) {
             });
         } else {
             setMessages(prev => {
+                // Remove suggestions from the last AI message
                 const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
                 return [...newMessages, userMessage];
             });
@@ -659,18 +657,22 @@ function AppContent({ state, formAction }) {
     
     return <ChatView
         messages={messages}
+        setMessages={setMessages}
         prompt={prompt}
         setPrompt={setPrompt}
         onFormSubmit={handleClientSideSubmit}
         viewportRef={viewportRef}
+        editingMessageId={editingMessageId}
+        setEditingMessageId={setEditingMessageId}
     />
 }
 
-// Wrapper component to provide form status context
 const FormStatusWrapper = ({ children, formAction, state }) => {
     return (
+        // The form element has to wrap the component that uses useFormStatus
         <form action={formAction} className="contents">
             {React.Children.map(children, child =>
+                // Pass state and formAction to the child
                 React.cloneElement(child, { state, formAction })
             )}
         </form>
@@ -687,5 +689,7 @@ export default function Home() {
         </FormStatusWrapper>
     );
 }
+
+    
 
     
