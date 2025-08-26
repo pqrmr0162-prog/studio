@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
