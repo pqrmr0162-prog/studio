@@ -20,27 +20,31 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 export async function getAiResponse(
-  prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const prompt = formData.get("prompt") as string;
-  const cameraImage = formData.get("cameraImage") as File | null;
-  const mode = formData.get("mode") as "chat" | "image";
+  const uploadedImage = formData.get("uploadedImage") as File | null;
+  
+  const isImageGeneration = prompt.toLowerCase().startsWith('generate image') || prompt.toLowerCase().startsWith('create image');
 
-  if ((!prompt || prompt.trim().length === 0) && !cameraImage) {
-    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or capture an image." };
+  if ((!prompt || prompt.trim().length === 0) && !uploadedImage) {
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload an image." };
   }
 
   try {
-    if (mode === "image") {
-      const input: GenerateImageInput = { prompt: prompt };
+    if (isImageGeneration) {
+      const imagePrompt = prompt.replace(/^(generate image|create image)/i, '').trim();
+      if (!imagePrompt) {
+        return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please provide a description for the image you want to generate." };
+      }
+      const input: GenerateImageInput = { prompt: imagePrompt };
       const result = await generateImage(input);
       return { response: null, suggestions: null, sources: null, imageUrl: result.imageUrl, error: null };
     } else {
       const input: InterpretPromptInput = { prompt };
       
-      if (cameraImage && cameraImage.size > 0) {
-          input.attachmentDataUri = await fileToDataUri(cameraImage);
+      if (uploadedImage && uploadedImage.size > 0) {
+          input.attachmentDataUri = await fileToDataUri(uploadedImage);
       }
 
       const result: InterpretPromptOutput = await interpretPrompt(input);

@@ -6,13 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Camera, MessageCircle, ImageIcon } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -37,8 +36,6 @@ interface Message {
   sources?: { title: string; url: string }[];
 }
 
-type Mode = "chat" | "image";
-
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -59,20 +56,16 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-  const [cameraImage, setCameraImage] = useState<File | null>(null);
-  const [cameraImagePreview, setCameraImagePreview] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [mode, setMode] = useState<Mode>("chat");
 
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -96,38 +89,6 @@ export default function Home() {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
-
-  useEffect(() => {
-    if (showCamera) {
-      const getCameraPermission = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({video: true});
-          setHasCameraPermission(true);
-  
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          setShowCamera(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings to use this app.',
-          });
-        }
-      };
-  
-      getCameraPermission();
-    } else {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-    }
-  }, [showCamera, toast]);
 
   useEffect(() => {
     if (state.error) {
@@ -184,17 +145,18 @@ export default function Home() {
   }, [messages]);
 
   const handleRemoveImage = () => {
-    setCameraImage(null);
-    setCameraImagePreview(null);
+    setUploadedImage(null);
+    setUploadedImagePreview(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
   };
   
   const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
-    formData.append("mode", mode);
-
-    if (cameraImage) {
-        formData.append("cameraImage", cameraImage, "capture.jpg");
+    if (uploadedImage) {
+        formData.append("uploadedImage", uploadedImage, uploadedImage.name);
     }
 
     if (editingMessageId !== null) {
@@ -202,7 +164,7 @@ export default function Home() {
             const newMessages = [...prev];
             const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
             if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: cameraImagePreview || newMessages[editedMessageIndex].imageUrl };
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
                 // Remove messages after the edited one, including their suggestions
                 newMessages.splice(editedMessageIndex + 1);
             }
@@ -214,12 +176,12 @@ export default function Home() {
         setPrompt("");
         handleRemoveImage();
 
-    } else if (currentPrompt.trim() || cameraImage) {
+    } else if (currentPrompt.trim() || uploadedImage) {
       const userMessage: Message = {
         id: Date.now(),
         sender: 'user',
         text: currentPrompt,
-        imageUrl: mode === 'image' ? undefined : cameraImagePreview ?? undefined,
+        imageUrl: uploadedImagePreview ?? undefined,
       };
      
       setMessages(prev => {
@@ -236,7 +198,6 @@ export default function Home() {
 
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
-    // Directly create and submit a new form data
     const formData = new FormData();
     formData.append("prompt", suggestion);
     handleFormSubmit(formData);
@@ -246,7 +207,6 @@ export default function Home() {
     setMessages([]);
     handleRemoveImage();
     setEditingMessageId(null);
-    setShowCamera(false);
   };
 
   const toggleTheme = () => {
@@ -264,10 +224,10 @@ export default function Home() {
   const handleEdit = (message: Message) => {
     setEditingMessageId(message.id);
     setPrompt(message.text);
-    setMode("chat");
     if (message.imageUrl) {
-        setCameraImagePreview(message.imageUrl);
-        // Note: we can't re-create the File object, so user would need to re-capture if they want to change it.
+        // Can't re-create the file, so we just show the preview. 
+        // User needs to re-upload if they want to change the image.
+        setUploadedImagePreview(message.imageUrl);
     } else {
         handleRemoveImage();
     }
@@ -320,52 +280,14 @@ export default function Home() {
     
     recognitionRef.current.start();
   };
-
-  const handleCapture = () => {
-    if (videoRef.current) {
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-        canvas.toBlob(blob => {
-            if (blob) {
-                setCameraImage(new File([blob], "capture.jpg", { type: "image/jpeg" }));
-                setCameraImagePreview(URL.createObjectURL(blob));
-            }
-        }, 'image/jpeg');
-        setShowCamera(false);
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        setUploadedImage(file);
+        setUploadedImagePreview(URL.createObjectURL(file));
     }
-  }
-
-  const CameraView = () => (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl relative">
-            <CardContent className="p-2 md:p-4">
-                <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted playsInline />
-                {hasCameraPermission === false && (
-                    <Alert variant="destructive" className="mt-2">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>
-                        Please allow camera access to use this feature.
-                        </AlertDescription>
-                    </Alert>
-                )}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
-                     <Button variant="outline" size="icon" className="rounded-full h-16 w-16" onClick={handleCapture} disabled={hasCameraPermission !== true}>
-                        <Camera className="h-8 w-8" />
-                    </Button>
-                </div>
-                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={() => setShowCamera(false)}>
-                    <X className="h-5 w-5" />
-                </Button>
-            </CardContent>
-        </Card>
-    </div>
-  );
-
-  if (showCamera) {
-    return <CameraView />;
-  }
+  };
 
   const WelcomeScreen = () => (
      <div className="flex flex-col h-screen bg-background">
@@ -375,47 +297,37 @@ export default function Home() {
             <h1 className="text-2xl md:text-3xl font-bold">Hi, I'm AeonAI</h1>
             <p className="text-muted-foreground mt-2">How can I help you today?</p>
             <div className="mt-8">
-              <div className="flex justify-center gap-2 mb-4">
-                <Button variant={mode === 'chat' ? 'secondary' : 'ghost'} onClick={() => setMode('chat')}>
-                  <MessageCircle className="mr-2" /> Chat
-                </Button>
-                <Button variant={mode === 'image' ? 'secondary' : 'ghost'} onClick={() => setMode('image')}>
-                  <ImageIcon className="mr-2" /> Image
-                </Button>
-              </div>
               <form
                   ref={formRef}
                   action={handleFormSubmit}
                   className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
               >
-                  {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
-                        <Camera className="h-5 w-5" />
-                        <span className="sr-only">Use camera</span>
-                    </Button>
-                  )}
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                      <Paperclip className="h-5 w-5" />
+                      <span className="sr-only">Upload file</span>
+                  </Button>
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+
                   <Textarea
                     ref={textareaRef}
                     name="prompt"
-                    placeholder={mode === 'chat' ? "Message AeonAI..." : "Describe an image to generate..."}
+                    placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                     rows={1}
                   />
-                   {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
-                        <Mic className="h-5 w-5" />
-                        <span className="sr-only">Use microphone</span>
-                    </Button>
-                   )}
+                  <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                      <Mic className="h-5 w-5" />
+                      <span className="sr-only">Use microphone</span>
+                  </Button>
                   <SubmitButton />
               </form>
-              {cameraImagePreview && mode === 'chat' && (
+              {uploadedImagePreview && (
                   <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
-                      <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                      <span className="text-sm truncate">Image captured</span>
+                      <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                      <span className="text-sm truncate">Image attached</span>
                       <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
                           <X className="h-4 w-4" />
                       </Button>
@@ -510,7 +422,7 @@ export default function Home() {
                         )}
                       >
                         {message.imageUrl && (
-                          <div className="relative aspect-square">
+                          <div className="relative aspect-square not-prose my-2">
                             <Image
                                 src={message.imageUrl}
                                 alt={message.text || "Generated or uploaded image"}
@@ -579,18 +491,10 @@ export default function Home() {
         </main>
         <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
             <div className="max-w-4xl mx-auto w-full">
-            <div className="flex justify-center gap-2 mb-2">
-              <Button variant={mode === 'chat' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('chat')}>
-                <MessageCircle className="mr-2" /> Chat
-              </Button>
-              <Button variant={mode === 'image' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('image')}>
-                <ImageIcon className="mr-2" /> Image
-              </Button>
-            </div>
-            {cameraImagePreview && mode === 'chat' && (
+            {uploadedImagePreview && (
                 <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
-                    <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                    <span className="text-sm truncate">Image captured</span>
+                    <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                    <span className="text-sm truncate">Image attached</span>
                     <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
                         <X className="h-4 w-4" />
                     </Button>
@@ -601,22 +505,19 @@ export default function Home() {
                 action={handleFormSubmit}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
-                 {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => setShowCamera(true)}>
-                        <Camera className="h-5 w-5" />
-                        <span className="sr-only">Use camera</span>
-                    </Button>
-                 )}
-                
+                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
+                    <Paperclip className="h-5 w-5" />
+                    <span className="sr-only">Upload file</span>
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+
                 <Textarea
                   ref={textareaRef}
                   name="prompt"
                   placeholder={
                       editingMessageId 
                           ? "Edit your message..." 
-                          : mode === 'chat' 
-                              ? "Message AeonAI..." 
-                              : "Describe an image to generate..."
+                          : "Ask about an image or just chat. Try 'generate image of a cat'"
                   }
                   autoComplete="off"
                   value={prompt}
@@ -624,12 +525,10 @@ export default function Home() {
                   className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                   rows={1}
                 />
-                 {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick}>
-                        <Mic className="h-5 w-5" />
-                        <span className="sr-only">Use microphone</span>
-                    </Button>
-                 )}
+                <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick}>
+                    <Mic className="h-5 w-5" />
+                    <span className="sr-only">Use microphone</span>
+                </Button>
                 <SubmitButton />
             </form>
             </div>
