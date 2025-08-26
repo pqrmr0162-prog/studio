@@ -147,10 +147,15 @@ export default function Home() {
   };
 
   const handlePlayAudio = async (message: Message) => {
-    if (playingAudio === message.id) {
-        audioRef.current?.pause();
+    if (playingAudio === message.id && audioRef.current) {
+        audioRef.current.pause();
         setPlayingAudio(null);
         return;
+    }
+
+    if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setPlayingAudio(null);
     }
     
     setLoadingAudio(message.id);
@@ -166,9 +171,6 @@ export default function Home() {
         }
 
         if(result.audioDataUri) {
-            if (audioRef.current) {
-                audioRef.current.pause();
-            }
             const newAudio = new Audio(result.audioDataUri);
             audioRef.current = newAudio;
 
@@ -334,6 +336,7 @@ export default function Home() {
                     onChange={(e) => setPrompt(e.target.value)}
                     className="flex-1 rounded-full px-4"
                   />
+
                   <SubmitButton />
                 </form>
               </div>
