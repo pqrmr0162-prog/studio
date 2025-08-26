@@ -7,6 +7,7 @@ import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -41,7 +42,7 @@ type Mode = "chat" | "image";
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
+    <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full self-end">
       {pending ? (
         <div className="w-5 h-5 border-2 border-background border-t-primary rounded-full animate-spin"></div>
       ) : (
@@ -70,6 +71,16 @@ export default function Home() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${scrollHeight}px`;
+    }
+  }, [prompt]);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -375,7 +386,7 @@ export default function Home() {
               <form
                   ref={formRef}
                   action={handleFormSubmit}
-                  className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
+                  className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
               >
                   {mode === 'chat' && (
                     <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
@@ -383,13 +394,15 @@ export default function Home() {
                         <span className="sr-only">Use camera</span>
                     </Button>
                   )}
-                  <Input
+                  <Textarea
+                    ref={textareaRef}
                     name="prompt"
                     placeholder={mode === 'chat' ? "Message AeonAI..." : "Describe an image to generate..."}
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                    rows={1}
                   />
                    {mode === 'chat' && (
                     <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
@@ -586,16 +599,17 @@ export default function Home() {
             <form
                 ref={formRef}
                 action={handleFormSubmit}
-                className="flex items-center gap-2 md:gap-4 px-2 py-1.5 rounded-full bg-card border shadow-sm"
+                className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                  {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => setShowCamera(true)}>
                         <Camera className="h-5 w-5" />
                         <span className="sr-only">Use camera</span>
                     </Button>
                  )}
                 
-                <Input
+                <Textarea
+                  ref={textareaRef}
                   name="prompt"
                   placeholder={
                       editingMessageId 
@@ -607,10 +621,11 @@ export default function Home() {
                   autoComplete="off"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-2"
+                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                  rows={1}
                 />
                  {mode === 'chat' && (
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick}>
                         <Mic className="h-5 w-5" />
                         <span className="sr-only">Use microphone</span>
                     </Button>
