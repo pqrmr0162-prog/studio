@@ -198,8 +198,8 @@ const interpretPromptFlow = ai.defineFlow(
     
     if (!output || !output.response) {
         return {
-            response: "I'm sorry, I had trouble processing your request. Could you please try rephrasing or providing more context?",
-            suggestions: ["Try again", "What can you do?"],
+            response: "My apologies, but I'm unable to provide a response to that right now. Please try rephrasing your request.",
+            suggestions: ["Can you explain that differently?", "What are your capabilities?"],
             sources: [],
         }
     }
