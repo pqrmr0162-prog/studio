@@ -18,7 +18,7 @@ const InterpretPromptInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "An optional image attachment, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "An optional image attachment, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 
@@ -27,6 +27,10 @@ export type InterpretPromptInput = z.infer<typeof InterpretPromptInputSchema>;
 const InterpretPromptOutputSchema = z.object({
   response: z.string().describe('The AI-generated response to the prompt.'),
   suggestions: z.array(z.string()).optional().describe('A list of suggested follow-up prompts for the user.'),
+  sources: z.array(z.object({
+    title: z.string().describe('The title of the source.'),
+    url: z.string().describe('The URL of the source.'),
+  })).optional().describe('A list of web sources used to generate the response.'),
 });
 
 export type InterpretPromptOutput = z.infer<typeof InterpretPromptOutputSchema>;
@@ -37,11 +41,41 @@ export async function interpretPrompt(
   return interpretPromptFlow(input);
 }
 
+// Example tool: Search the web
+const searchWeb = ai.defineTool(
+  {
+    name: 'searchWeb',
+    description: 'Searches the web for information on a given topic.',
+    inputSchema: z.object({
+      query: z.string().describe('The search query.'),
+    }),
+    outputSchema: z.array(z.object({
+        title: z.string(),
+        url: z.string(),
+        snippet: z.string(),
+    })),
+  },
+  async input => {
+    // In a real implementation, this would call a search engine API.
+    console.log(`Searching web for: ${input.query}`);
+    // Returning mock data for demonstration purposes.
+    return [
+        { title: 'Official Next.js Documentation', url: 'https://nextjs.org/docs', snippet: 'The official documentation for Next.js, a popular React framework.' },
+        { title: 'Genkit AI Developer Docs', url: 'https://firebase.google.com/docs/genkit', snippet: 'Genkit is an open source framework from Google that helps you build, deploy, and monitor production-ready AI apps.' },
+        { title: 'Tailwind CSS - Official Site', url: 'https://tailwindcss.com/', snippet: 'A utility-first CSS framework for rapidly building custom designs.' },
+    ];
+  }
+);
+
+
 const interpretPromptPrompt = ai.definePrompt({
   name: 'interpretPromptPrompt',
   input: {schema: InterpretPromptInputSchema},
   output: {schema: InterpretPromptOutputSchema},
+  tools: [searchWeb],
   prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment. You can use markdown to format your response. For example, you can use **bold** to emphasize important points.
+
+If the user asks a question that requires information from the web, use the 'searchWeb' tool to find relevant sources. List the sources you used in your response by populating the 'sources' field in the output.
 
 {{#if attachmentDataUri}}
 Attachment:

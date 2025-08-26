@@ -8,6 +8,7 @@ import type { GenerateImageInput } from "@/ai/flows/generate-image";
 interface FormState {
   response: string | null;
   suggestions: string[] | null;
+  sources: { title: string; url: string }[] | null;
   imageUrl: string | null;
   error: string | null;
 }
@@ -26,7 +27,7 @@ export async function getAiResponse(
   const attachment = formData.get("attachment") as File | null;
 
   if ((!prompt || prompt.trim().length === 0) && !attachment) {
-    return { response: null, suggestions: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
   }
 
   try {
@@ -34,7 +35,7 @@ export async function getAiResponse(
       const imagePrompt = prompt.replace(/^(generate image of|create an image of|generate image|create an image)/i, '').trim();
       const input: GenerateImageInput = { prompt: imagePrompt };
       const result = await generateImage(input);
-      return { response: null, suggestions: null, imageUrl: result.imageUrl, error: null };
+      return { response: null, suggestions: null, sources: null, imageUrl: result.imageUrl, error: null };
     } else {
       const input: InterpretPromptInput = { prompt };
       
@@ -43,11 +44,17 @@ export async function getAiResponse(
       }
 
       const result: InterpretPromptOutput = await interpretPrompt(input);
-      return { response: result.response, suggestions: result.suggestions ?? null, imageUrl: null, error: null };
+      return { 
+        response: result.response, 
+        suggestions: result.suggestions ?? null, 
+        sources: result.sources ?? null,
+        imageUrl: null, 
+        error: null 
+      };
     }
   } catch (error) {
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-    return { response: null, suggestions: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
   }
 }

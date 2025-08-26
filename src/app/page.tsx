@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil, LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Link from 'next/link';
 
 const initialState = {
   response: null,
   suggestions: null,
+  sources: null,
   imageUrl: null,
   error: null,
 };
@@ -28,6 +30,7 @@ interface Message {
   text: string;
   imageUrl?: string;
   suggestions?: string[];
+  sources?: { title: string; url: string }[];
 }
 
 function SubmitButton() {
@@ -87,6 +90,7 @@ export default function Home() {
         text: state.response || "",
         imageUrl: state.imageUrl || undefined,
         suggestions: state.suggestions || undefined,
+        sources: state.sources || undefined,
       };
 
       if (editingMessageId !== null) {
@@ -317,6 +321,23 @@ export default function Home() {
                       message.sender === 'user' ? "items-end" : "items-start"
                     )}
                   >
+                     {message.sender === 'ai' && message.sources && message.sources.length > 0 && (
+                      <div className="flex flex-col items-start gap-2 mb-2 ml-10 md:ml-12">
+                          <h3 className="text-sm font-semibold flex items-center gap-2">
+                              <LinkIcon size={14} />
+                              Sources
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                              {message.sources.map((source, index) => (
+                                  <Button key={index} variant="outline" size="sm" asChild className="text-xs">
+                                      <Link href={source.url} target="_blank" rel="noopener noreferrer">
+                                          {source.title}
+                                      </Link>
+                                  </Button>
+                              ))}
+                          </div>
+                      </div>
+                    )}
                     <div className={cn(
                       "group flex items-start gap-2 md:gap-4 w-full",
                       message.sender === 'user' && "justify-end"
@@ -391,13 +412,13 @@ export default function Home() {
                   </div>
                 ))}
                 {useFormStatus().pending && (
-                  <div className="flex items-center gap-2 md:gap-4">
-                      <Avatar className="w-8 h-8 border">
+                  <div className="flex items-start gap-2 md:gap-4">
+                      <Avatar className="w-8 h-8 border shrink-0">
                          <AvatarFallback>
                             <CrowLogo className="w-5 h-5 text-primary animate-pulse" />
                          </AvatarFallback>
                       </Avatar>
-                      <div className="flex items-center gap-1">
+                      <div className="max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 text-sm ai-message flex items-center gap-1">
                           <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
                           <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
                           <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
@@ -425,7 +446,7 @@ export default function Home() {
             <form
                 ref={formRef}
                 action={handleFormSubmit}
-                className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
+                className="flex items-center gap-2 md:gap-4 px-2 py-1.5 rounded-full bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
                     <Paperclip className="h-5 w-5" />
@@ -445,7 +466,7 @@ export default function Home() {
                 autoComplete="off"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-2"
                 />
 
                 <SubmitButton />
