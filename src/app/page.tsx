@@ -152,6 +152,66 @@ export default function Home() {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
 
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+          <div className="w-full max-w-2xl">
+            <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
+            <h1 className="text-2xl md:text-3xl font-bold">Hi, I'm AeonAI</h1>
+            <p className="text-muted-foreground mt-2">How can I help you today?</p>
+            <div className="mt-8">
+              <form
+                  ref={formRef}
+                  action={handleFormAction}
+                  className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
+              >
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                      <Paperclip className="h-5 w-5" />
+                      <span className="sr-only">Attach file</span>
+                  </Button>
+                  <input
+                  type="file"
+                  name="attachment"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*"
+                  />
+                  <Input
+                  name="prompt"
+                  placeholder="Message AeonAI..."
+                  autoComplete="off"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+                  />
+
+                  <SubmitButton />
+              </form>
+              {attachment && (
+                  <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
+                      {attachmentPreview ? (
+                          <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                      ) : (
+                          <Paperclip className="h-6 w-6" />
+                      )}
+                      <span className="text-sm truncate">{attachment.name}</span>
+                      <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
+                          <X className="h-4 w-4" />
+                      </Button>
+                  </div>
+              )}
+            </div>
+          </div>
+        </main>
+        <footer className="text-center p-4 text-xs text-muted-foreground">
+          AI-generated, for reference only
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
         <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b z-10">
@@ -176,13 +236,6 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6 pb-24 md:pb-28">
-                {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
-                        <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mb-4 text-primary"/>
-                        <p className="text-lg md:text-xl font-semibold">How can I help you?</p>
-                        <p className="text-xs mt-1">by Bissu</p>
-                    </div>
-                )}
                 {messages.map((message) => (
                   <div
                     key={message.id}
