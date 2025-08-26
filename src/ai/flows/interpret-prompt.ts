@@ -177,9 +177,10 @@ If the user asks about your capabilities, your identity, or how you compare to o
 
 If the user asks specifically about the "Aeon-1s" model, you must respond with: "I apologize, but due to restrictions from my developer, I am not able to share specific details about the Aeon-1s model. My purpose is to assist you with your questions to the best of my ability."
 
-If an attachment is provided:
-- If there is a prompt, answer the prompt based on the document's content.
-- If there is no prompt, your primary task is to analyze the attachment. If it's an image, describe it. If it is a document (like a PDF or text file), you MUST summarize its content in a clear and concise way.
+If an attachment is provided, your primary task is to analyze it. 
+- If there is also a prompt, answer the prompt based on the attachment's content.
+- If there is no prompt, describe the image or summarize the document.
+In all cases involving an attachment, you must provide a response.
 
 If no attachment is provided, generate a comprehensive and helpful response to the prompt.
 
@@ -194,9 +195,15 @@ const interpretPromptFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await interpretPromptPrompt(input);
-    return output!;
+    
+    if (!output || !output.response) {
+        return {
+            response: "I'm sorry, I had trouble processing your request. Could you please try rephrasing or providing more context?",
+            suggestions: ["Try again", "What can you do?"],
+            sources: [],
+        }
+    }
+
+    return output;
   }
 );
-    
-
-    
