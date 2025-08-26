@@ -15,6 +15,7 @@ import Image from 'next/image';
 
 const initialState = {
   response: null,
+  imageUrl: null,
   error: null,
 };
 
@@ -75,10 +76,15 @@ export default function Home() {
         title: "Error",
         description: state.error,
       });
-    } else if (state.response) {
+    } else if (state.response || state.imageUrl) {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now(), sender: 'ai', text: state.response! },
+        { 
+          id: Date.now(), 
+          sender: 'ai', 
+          text: state.response || "",
+          imageUrl: state.imageUrl || undefined
+        },
       ]);
     }
   }, [state, toast]);
@@ -163,7 +169,7 @@ export default function Home() {
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-hidden">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6">
                 {messages.length === 0 && (
@@ -203,7 +209,7 @@ export default function Home() {
                             className="rounded-lg mb-2 max-w-full h-auto"
                         />
                       )}
-                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      {message.text && <p className="whitespace-pre-wrap">{message.text}</p>}
                     </div>
                     {message.sender === 'user' && (
                       <Avatar className="w-8 h-8 border shrink-0">
@@ -230,7 +236,7 @@ export default function Home() {
                 )}
               </div>
             </ScrollArea>
-        </main>
+        </div>
         <footer className="shrink-0 p-2 md:p-4 border-t">
             <div className="max-w-4xl mx-auto w-full">
             {attachment && (
