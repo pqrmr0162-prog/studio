@@ -48,13 +48,13 @@ function SubmitButton() {
   );
 }
 
-function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage }) {
+function WelcomeScreen({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage }) {
     const welcomeFormRef = useRef<HTMLFormElement>(null);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        welcomeFormRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        welcomeFormRef.current?.requestSubmit();
       }
     };
     
@@ -70,7 +70,13 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
             <div className="mt-8 w-full">
                 <form
                     ref={welcomeFormRef}
-                    onSubmit={handleFormSubmit}
+                    action={(formData) => {
+                      const currentPrompt = formData.get("prompt") as string;
+                      if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
+                          return;
+                      }
+                      welcomeFormRef.current?.closest('form')?.submit();
+                    }}
                     className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto"
                 >
                     <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
@@ -134,9 +140,7 @@ export default function Home() {
   const lastSubmittedPrompt = useRef("");
   const { pending } = useFormStatus();
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  const handleClientSideSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
     if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
@@ -151,6 +155,7 @@ export default function Home() {
             const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
             if (editedMessageIndex !== -1) {
                 newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                // Remove the subsequent AI message if it exists
                 if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
                     newMessages.splice(editedMessageIndex + 1, 1);
                 }
@@ -164,6 +169,7 @@ export default function Home() {
             text: currentPrompt,
             imageUrl: uploadedImagePreview ?? undefined,
         };
+        // Clear suggestions from previous messages
         setMessages(prev => {
             const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
             return [...newMessages, userMessage];
@@ -237,7 +243,12 @@ export default function Home() {
               const newMessages = [...prev];
               const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
               const insertIndex = editedMessageIndex + 1;
-              newMessages.splice(insertIndex, 0, newAiMessage);
+              // Replace any existing AI message at this spot
+              if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                  newMessages[insertIndex] = newAiMessage;
+              } else {
+                  newMessages.splice(insertIndex, 0, newAiMessage);
+              }
               return newMessages;
           });
           setEditingMessageId(null);
@@ -273,8 +284,7 @@ export default function Home() {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        // Submitting the form will trigger the handleFormSubmit function
-        formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        formRef.current?.requestSubmit();
     }
   };
 
@@ -282,7 +292,7 @@ export default function Home() {
     setPrompt(suggestion);
     // A little delay to allow the prompt to update before submitting
     setTimeout(() => {
-        formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        formRef.current?.requestSubmit();
     }, 100);
   }
 
@@ -312,6 +322,7 @@ export default function Home() {
     } else {
         handleRemoveImage();
     }
+    textareaRef.current?.focus();
   }
 
   const handleMicClick = () => {
@@ -370,19 +381,26 @@ export default function Home() {
     }
   };
 
+  const RootForm = ({ children }) => (
+    <form action={handleClientSideSubmit} className="contents">
+        {children}
+    </form>
+  );
+
   if (messages.length === 0) {
-    return <WelcomeScreen 
-      handleFormSubmit={handleFormSubmit}
-      fileInputRef={fileInputRef}
-      handleFileChange={handleFileChange}
-      textareaRef={textareaRef}
-      prompt={prompt}
-      setPrompt={setPrompt}
-      isRecording={isRecording}
-      handleMicClick={handleMicClick}
-      uploadedImagePreview={uploadedImagePreview}
-      handleRemoveImage={handleRemoveImage}
-    />;
+    return <RootForm>
+      <WelcomeScreen 
+        fileInputRef={fileInputRef}
+        handleFileChange={handleFileChange}
+        textareaRef={textareaRef}
+        prompt={prompt}
+        setPrompt={setPrompt}
+        isRecording={isRecording}
+        handleMicClick={handleMicClick}
+        uploadedImagePreview={uploadedImagePreview}
+        handleRemoveImage={handleRemoveImage}
+      />
+    </RootForm>;
   }
 
   return (
@@ -539,7 +557,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                onSubmit={handleFormSubmit}
+                action={handleClientSideSubmit}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
