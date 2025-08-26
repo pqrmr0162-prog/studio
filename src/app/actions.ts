@@ -20,15 +20,16 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 export async function getAiResponse(
+  prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const prompt = formData.get("prompt") as string;
-  const uploadedImage = formData.get("uploadedImage") as File | null;
+  const uploadedFile = formData.get("uploadedFile") as File | null;
   
   const isImageGeneration = prompt.toLowerCase().startsWith('generate image') || prompt.toLowerCase().startsWith('create image');
 
-  if ((!prompt || prompt.trim().length === 0) && !uploadedImage) {
-    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload an image." };
+  if ((!prompt || prompt.trim().length === 0) && !uploadedFile) {
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
   }
 
   try {
@@ -43,8 +44,8 @@ export async function getAiResponse(
     } else {
       const input: InterpretPromptInput = { prompt };
       
-      if (uploadedImage && uploadedImage.size > 0) {
-          input.attachmentDataUri = await fileToDataUri(uploadedImage);
+      if (uploadedFile && uploadedFile.size > 0) {
+          input.attachmentDataUri = await fileToDataUri(uploadedFile);
       }
 
       const result: InterpretPromptOutput = await interpretPrompt(input);

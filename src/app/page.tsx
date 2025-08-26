@@ -156,7 +156,7 @@ export default function Home() {
     const currentPrompt = formData.get("prompt") as string;
     
     if (uploadedImage) {
-        formData.append("uploadedImage", uploadedImage, uploadedImage.name);
+        formData.append("uploadedFile", uploadedImage, uploadedImage.name);
     }
 
     if (editingMessageId !== null) {
@@ -306,7 +306,7 @@ export default function Home() {
                       <Paperclip className="h-5 w-5" />
                       <span className="sr-only">Upload file</span>
                   </Button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
 
                   <Textarea
                     ref={textareaRef}
@@ -509,7 +509,7 @@ export default function Home() {
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Upload file</span>
                 </Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
 
                 <Textarea
                   ref={textareaRef}
