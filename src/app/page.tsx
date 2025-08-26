@@ -206,7 +206,7 @@ export default function Home() {
           </div>
         </main>
         <footer className="text-center p-4 text-xs text-muted-foreground">
-          by bissu
+          by Bissu
         </footer>
       </div>
     );
@@ -348,3 +348,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
