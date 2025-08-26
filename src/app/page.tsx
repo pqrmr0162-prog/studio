@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -49,7 +49,7 @@ function SubmitButton() {
 }
 
 export default function Home() {
-  const [state, formAction] = useFormState(getAiResponse, initialState);
+  const [state, formAction] = useActionState(getAiResponse, initialState);
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -310,7 +310,7 @@ export default function Home() {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept="image/*,application/pdf,text/plain"
+                  accept="image/*,application/pdf,text/plain,.doc,.docx"
                   />
                   <Input
                   name="prompt"
@@ -524,7 +524,7 @@ export default function Home() {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept="image/*,application/pdf,text/plain"
+                accept="image/*,application/pdf,text/plain,.doc,.docx"
                 />
                 <Input
                 name="prompt"
@@ -546,5 +546,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
