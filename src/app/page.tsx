@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useActionState, useEffect, useRef, useState, FormEvent } from "react";
@@ -49,13 +50,11 @@ function SubmitButton() {
 }
 
 const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit, pending }) => {
-
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         if (formRef.current) {
-            const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-            formRef.current.dispatchEvent(submitEvent);
+          formRef.current.requestSubmit();
         }
       }
     };
@@ -70,7 +69,7 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <form ref={formRef} action={onSubmit as any} className="contents">
+                <form ref={formRef} onSubmit={onSubmit} className="contents">
                     <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
@@ -117,13 +116,11 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
 };
 
 const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, onSubmit, pending }) => {
-
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
           if (formRef.current) {
-            const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-            formRef.current.dispatchEvent(submitEvent);
+            formRef.current.requestSubmit();
           }
       }
     };
@@ -271,7 +268,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <form ref={formRef} action={onSubmit as any} className="contents">
+                <form ref={formRef} onSubmit={onSubmit} className="contents">
                     <div className="max-w-4xl mx-auto w-full">
                     {uploadedImagePreview && (
                         <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -315,10 +312,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
 };
 
 
-function AppContent({
-    state,
-    formAction,
-}) {
+function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
@@ -335,15 +329,16 @@ function AppContent({
     const [isRecording, setIsRecording] = useState(false);
 
     useEffect(() => {
-        const storedTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(storedTheme);
-        document.documentElement.classList.add(storedTheme);
+        const storedTheme = localStorage.getItem('theme');
+        const initialTheme = storedTheme ? storedTheme : 'dark';
+        setTheme(initialTheme);
+        document.documentElement.classList.add(initialTheme);
     }, []);
 
-    const isFirstRender = useRef(true);
+    const isFirstResponse = useRef(true);
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
+        if (isFirstResponse.current) {
+            isFirstResponse.current = false;
             return;
         }
 
@@ -390,7 +385,8 @@ function AppContent({
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             const scrollHeight = textareaRef.current.scrollHeight;
-            textareaRef.current.style.height = `${scrollHeight}px`;
+            const maxHeight = 192; // Corresponds to max-h-48
+            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
         }
     }, [prompt]);
 
@@ -463,10 +459,7 @@ function AppContent({
         setPrompt(suggestion);
         setTimeout(() => {
             if (formRef.current) {
-                const formData = new FormData(formRef.current);
-                formData.set('prompt', suggestion);
-                const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
-                formRef.current.dispatchEvent(submitEvent);
+                formRef.current.requestSubmit();
             }
         }, 100);
     }
@@ -508,9 +501,10 @@ function AppContent({
     }
 
     const handleMicClick = () => {
-        if (pending || isRecording) {
+        if (pending) return;
+        
+        if (isRecording) {
             recognitionRef.current?.stop();
-            setIsRecording(false);
             return;
         }
 
@@ -598,22 +592,12 @@ export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
     return (
-        <form
-            onSubmit={e => {
-                // This form submission is now handled by handleClientSideSubmit,
-                // which calls formAction manually. We prevent default here
-                // to avoid a double submission.
-                e.preventDefault();
-            }}
-            // The `action` attribute is still needed for progressive enhancement,
-            // but our client-side logic will take precedence.
-            action={formAction}
-            className="contents"
-        >
-            <AppContent
-                state={state}
-                formAction={formAction}
-            />
-        </form>
+        <AppContent
+            state={state}
+            formAction={formAction}
+        />
     );
 }
+
+
+    
