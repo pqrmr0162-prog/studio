@@ -197,11 +197,10 @@ const interpretPromptFlow = ai.defineFlow(
   async input => {
     const {output} = await interpretPromptPrompt(input);
     
-    if (!output || !output.response) {
+    if (!output) {
         return {
             response: "My apologies, but I'm unable to provide a response to that right now. Please try rephrasing your request.",
             suggestions: ["Can you explain that differently?", "What are your capabilities?"],
-            sources: [],
         }
     }
 
