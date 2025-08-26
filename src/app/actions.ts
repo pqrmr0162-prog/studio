@@ -63,3 +63,5 @@ export async function getAiResponse(
     return { response: null, suggestions: null, sources: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
   }
 }
+
+    

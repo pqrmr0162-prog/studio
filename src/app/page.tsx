@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useEffect, useRef, useState } from "react";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -294,8 +293,7 @@ export default function Home() {
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
           <div className="w-full max-w-2xl">
             <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
-            <h1 className="text-2xl md:text-3xl font-bold">Hi, I'm AeonAI</h1>
-            <p className="text-muted-foreground mt-2">How can I help you today?</p>
+            <h1 className="text-2xl md:text-3xl font-bold">How can I help you today?</h1>
             <div className="mt-8">
               <form
                   ref={formRef}
@@ -536,3 +534,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
