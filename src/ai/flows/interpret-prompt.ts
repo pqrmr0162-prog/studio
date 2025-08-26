@@ -164,6 +164,7 @@ const interpretPromptPrompt = ai.definePrompt({
 - You can use markdown to format your response (e.g., **bold**, lists, tables).
 
 {{#if attachmentDataUri}}
+The user has provided an attachment. You MUST analyze its content and use it to inform your response.
 Attachment:
 {{media url=attachmentDataUri}}
 {{/if}}
@@ -175,7 +176,11 @@ If the user asks "how is your owner" or a similar question about your creator or
 
 If the user asks about your capabilities, your identity, or how you compare to other AIs like ChatGPT, Grok, or Perplexity, respond with: "I'm AeonAI, a powerful assistant created by Bissu and powered by Google's latest models. My strength lies in combining my vast knowledge base with real-time information from tools like news APIs to give you comprehensive and up-to-date answers. While models like ChatGPT, Grok, and Perplexity are excellent general-purpose conversational AIs, I'm uniquely integrated into this application to provide a seamless and context-aware experience. My goal is to be the most helpful assistant for you right here, right now."
 
-For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment. If the attachment is a document, summarize it or answer any questions the user has about its content.
+If an attachment is provided:
+- If there is a prompt, answer the prompt based on the document's content.
+- If there is no prompt, your primary task is to analyze the attachment. If it's an image, describe it. If it is a document (like a PDF or text file), you MUST summarize its content in a clear and concise way.
+
+If no attachment is provided, generate a comprehensive and helpful response to the prompt.
 
 After your main response, generate a few (2-3) short, relevant follow-up questions or actions the user might want to take next and provide them in the 'suggestions' field. These should be things like "Tell me more about X", "Summarize this in three bullet points", or "What are the key takeaways?".`,
 });
@@ -191,5 +196,4 @@ const interpretPromptFlow = ai.defineFlow(
     return output!;
   }
 );
-
     
