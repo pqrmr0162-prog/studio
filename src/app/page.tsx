@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil, LinkIcon } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -56,10 +56,12 @@ export default function Home() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
+  const [isRecording, setIsRecording] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -232,6 +234,54 @@ export default function Home() {
     }
   }
 
+  const handleMicClick = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        variant: "destructive",
+        title: "Unsupported Browser",
+        description: "Speech recognition is not supported in your browser.",
+      });
+      return;
+    }
+
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = false;
+    recognitionRef.current.interimResults = false;
+    recognitionRef.current.lang = 'en-US';
+
+    recognitionRef.current.onstart = () => {
+      setIsRecording(true);
+      toast({ title: "Listening..." });
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current.onerror = (event: any) => {
+      setIsRecording(false);
+      toast({
+        variant: "destructive",
+        title: "Speech Recognition Error",
+        description: event.error,
+      });
+    };
+
+    recognitionRef.current.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setPrompt(transcript);
+    };
+    
+    recognitionRef.current.start();
+  };
+
   if (messages.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -266,7 +316,10 @@ export default function Home() {
                   onChange={(e) => setPrompt(e.target.value)}
                   className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
                   />
-
+                  <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                      <Mic className="h-5 w-5" />
+                      <span className="sr-only">Use microphone</span>
+                  </Button>
                   <SubmitButton />
               </form>
               {attachment && (
@@ -471,6 +524,10 @@ export default function Home() {
                 onChange={(e) => setPrompt(e.target.value)}
                 className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-2"
                 />
+                 <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                      <Mic className="h-5 w-5" />
+                      <span className="sr-only">Use microphone</span>
+                  </Button>
 
                 <SubmitButton />
             </form>
