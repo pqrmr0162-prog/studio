@@ -154,7 +154,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b">
+        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b z-10">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>
             <h1 className="text-lg font-bold">AeonAI</h1>
@@ -170,9 +170,9 @@ export default function Home() {
             </Button>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
-              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6">
+              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6 pb-24 md:pb-28">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
                         <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mb-4 text-primary"/>
@@ -245,8 +245,8 @@ export default function Home() {
                 )}
               </div>
             </ScrollArea>
-        </div>
-        <footer className="shrink-0 p-2 md:p-4 border-t">
+        </main>
+        <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
             <div className="max-w-4xl mx-auto w-full">
             {attachment && (
                 <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
@@ -264,11 +264,11 @@ export default function Home() {
             <form
                 ref={formRef}
                 action={handleFormAction}
-                className="flex items-center gap-2 md:gap-4"
+                className="flex items-center gap-2 md:gap-4 p-2 rounded-full bg-card border shadow-sm"
             >
-                <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                <Paperclip className="h-5 w-5" />
-                <span className="sr-only">Attach file</span>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                    <Paperclip className="h-5 w-5" />
+                    <span className="sr-only">Attach file</span>
                 </Button>
                 <input
                 type="file"
@@ -284,7 +284,7 @@ export default function Home() {
                 autoComplete="off"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="flex-1 rounded-full px-4"
+                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
                 />
 
                 <SubmitButton />
@@ -294,3 +294,4 @@ export default function Home() {
     </div>
   );
 }
+
