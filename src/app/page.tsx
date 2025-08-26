@@ -228,18 +228,16 @@ export default function Home() {
                   </div>
                 ))}
                 {useFormStatus().pending && (
-                  <div className="flex items-start gap-2 md:gap-4">
+                  <div className="flex items-center gap-2 md:gap-4">
                       <Avatar className="w-8 h-8 border">
                          <AvatarFallback>
-                            <CrowLogo className="w-5 h-5 text-muted-foreground" />
+                            <CrowLogo className="w-5 h-5 text-primary animate-pulse" />
                          </AvatarFallback>
                       </Avatar>
-                      <div className="ai-message rounded-2xl px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-0"></div>
-                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-150"></div>
-                              <div className="w-2 h-2 rounded-full bg-current animate-pulse delay-300"></div>
-                          </div>
+                      <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
                       </div>
                   </div>
                 )}
