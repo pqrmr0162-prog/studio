@@ -206,7 +206,7 @@ export default function Home() {
           </div>
         </main>
         <footer className="text-center p-4 text-xs text-muted-foreground">
-          AI-generated, for reference only
+          by bissu
         </footer>
       </div>
     );
