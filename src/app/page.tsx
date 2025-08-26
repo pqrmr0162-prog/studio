@@ -29,12 +29,8 @@ interface Message {
 }
 
 const availableVoices = [
-    { id: 'Procyon', name: 'Procyon (Male, Sophisticated)'},
-    { id: 'Sirius', name: 'Sirius (Male, Robotic)'},
-    { id: 'Lyra', name: 'Lyra (Female, Calm)'},
-    { id: 'Orion', name: 'Orion (Male, Deep)'},
-    { id: 'Vega', name: 'Vega (Female, Crisp)'},
-    { id: 'Aquila', name: 'Aquila (Male, Raspy)'},
+    { id: 'Procyon', name: 'Male'},
+    { id: 'Lyra', name: 'Female'},
 ]
 
 function SubmitButton() {
@@ -90,9 +86,7 @@ export default function Home() {
   }, [theme]);
 
   useEffect(() => {
-    if (selectedVoice) {
-      localStorage.setItem('voice', selectedVoice);
-    }
+    localStorage.setItem('voice', selectedVoice);
   }, [selectedVoice]);
 
   useEffect(() => {
