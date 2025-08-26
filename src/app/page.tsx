@@ -494,9 +494,9 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                              </AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-1.5 py-3">
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.3s]"></div>
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.15s]"></div>
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
                           </div>
                       </div>
                     )}
@@ -598,7 +598,7 @@ function AppContent({ state, formAction }) {
           initialToastShown.current = true;
         }
 
-    }, [state]);
+    }, [state, toast, editingMessageId, messages]);
 
     useEffect(() => {
         if (viewportRef.current) {
