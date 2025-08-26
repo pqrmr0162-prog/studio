@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useRef, useState, FormEvent, useCallback } from "react";
+import { useActionState, useEffect, useRef, useState, FormEvent, useCallback, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -62,9 +62,7 @@ const WelcomeView = React.memo(({ onFormSubmit, setPrompt, prompt }) => {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
-        if (formRef.current) {
-          formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-        }
+        onFormSubmit();
       }
     };
     
@@ -189,7 +187,6 @@ WelcomeView.displayName = 'WelcomeView';
 
 const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId }) => {
     const { pending } = useFormStatus();
-    const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -222,9 +219,7 @@ const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormS
         if (pending) return;
         setPrompt(suggestion);
         setTimeout(() => {
-            if (formRef.current) {
-              formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-            }
+            onFormSubmit();
         }, 100);
     };
     
@@ -246,9 +241,7 @@ const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormS
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
-          if (formRef.current) {
-            formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-          }
+          onFormSubmit();
       }
     };
 
@@ -510,62 +503,62 @@ const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormS
 });
 ChatView.displayName = 'ChatView';
 
-
 function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
-    const isInitialRender = useRef(true);
+    const formRef = useRef<HTMLFormElement>(null);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
 
+    const [isPending, startTransition] = useTransition();
+
     useEffect(() => {
-        if (isInitialRender.current) {
-            isInitialRender.current = false;
-            return;
+      // Don't show toast on initial render
+      if (!state) {
+        return;
+      }
+      if (state.error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: state.error,
+        });
+        if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
+          setMessages(prev => prev.slice(0, -1));
         }
+      } else if (state.response || state.imageUrl) {
+        const newAiMessage: Message = {
+          id: Date.now(),
+          sender: 'ai',
+          text: state.response || "",
+          imageUrl: state.imageUrl || undefined,
+          suggestions: state.suggestions || undefined,
+          sources: state.sources || undefined,
+        };
 
-        if (state.error) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: state.error,
-            });
-            if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
-                setMessages(prev => prev.slice(0, -1));
+        if (editingMessageId !== null) {
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+              const insertIndex = editedMessageIndex + 1;
+              if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                newMessages[insertIndex] = newAiMessage;
+              } else {
+                newMessages.splice(insertIndex, 0, newAiMessage);
+              }
             }
-        } else if (state.response || state.imageUrl) {
-            const newAiMessage: Message = {
-                id: Date.now(),
-                sender: 'ai',
-                text: state.response || "",
-                imageUrl: state.imageUrl || undefined,
-                suggestions: state.suggestions || undefined,
-                sources: state.sources || undefined,
-            };
-
-            if (editingMessageId !== null) {
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                    if (editedMessageIndex !== -1) {
-                        const insertIndex = editedMessageIndex + 1;
-                        if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
-                            newMessages[insertIndex] = newAiMessage;
-                        } else {
-                            newMessages.splice(insertIndex, 0, newAiMessage);
-                        }
-                    }
-                    return newMessages;
-                });
-                setEditingMessageId(null);
-            } else {
-                setMessages((prev) => [...prev, newAiMessage]);
-            }
+            return newMessages;
+          });
+          setEditingMessageId(null);
+        } else {
+          setMessages((prev) => [...prev, newAiMessage]);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state]);
 
     useEffect(() => {
@@ -577,11 +570,10 @@ function AppContent({ state, formAction }) {
         }
     }, [messages, pending]);
 
-    const handleClientSideSubmit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+    const handleClientSideSubmit = () => {
         if (pending) return;
 
-        const formData = new FormData(event.currentTarget);
+        const formData = new FormData(formRef.current!);
         const currentPrompt = formData.get("prompt") as string;
         const uploadedFile = formData.get("uploadedFile") as File;
         
@@ -617,44 +609,48 @@ function AppContent({ state, formAction }) {
             });
         }
 
-        formAction(formData);
+        startTransition(() => {
+            formAction(formData);
+        });
         
         setPrompt("");
         // Reset the file input visually after submission by targeting the form directly.
-        const form = event.currentTarget;
-        const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
-        if(fileInput) fileInput.value = "";
+        const form = formRef.current;
+        if(form){
+            const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+            if(fileInput) fileInput.value = "";
+        }
     };
 
-
-    if (messages.length === 0 && !pending) {
-        return <WelcomeView onFormSubmit={handleClientSideSubmit} prompt={prompt} setPrompt={setPrompt} />;
-    }
-    
-    return <ChatView
-        messages={messages}
-        setMessages={setMessages}
-        prompt={prompt}
-        setPrompt={setPrompt}
-        onFormSubmit={handleClientSideSubmit}
-        viewportRef={viewportRef}
-        editingMessageId={editingMessageId}
-        setEditingMessageId={setEditingMessageId}
-    />
+    return (
+        <form ref={formRef} action={formAction} onSubmit={(e) => { e.preventDefault(); handleClientSideSubmit();}} className="contents">
+            {messages.length === 0 && !pending ? (
+                 <WelcomeView onFormSubmit={handleClientSideSubmit} prompt={prompt} setPrompt={setPrompt} />
+            ) : (
+                <ChatView
+                    messages={messages}
+                    setMessages={setMessages}
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    onFormSubmit={handleClientSideSubmit}
+                    viewportRef={viewportRef}
+                    editingMessageId={editingMessageId}
+                    setEditingMessageId={setEditingMessageId}
+                />
+            )}
+        </form>
+    )
 }
 
 // Wrapper component to provide form context
 const FormStatusWrapper = ({ children, formAction, state }) => {
-    const { pending } = useFormStatus();
-    
     // We need a ref to hold the form element, so we can manually trigger submission.
     const formRef = useRef<HTMLFormElement>(null);
 
     // This is the submission handler that will be attached to the <form> element.
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // Prevent default browser submission
-        if (pending) return; // Prevent re-submission while pending
-
+        
         // Extract the `onFormSubmit` handler from the children's props.
         const childSubmitHandler = (children as React.ReactElement)?.props?.onFormSubmit;
         if (childSubmitHandler) {
@@ -663,17 +659,17 @@ const FormStatusWrapper = ({ children, formAction, state }) => {
              childSubmitHandler(event);
         } else {
             // Fallback for direct submission, though our structure relies on the custom handler.
-            formAction(new FormData(event.currentTarget));
+             formAction(new FormData(event.currentTarget));
         }
     };
 
     return (
-        <form ref={formRef} action={formAction} className="contents" onSubmit={handleSubmit}>
+        <form ref={formRef} action={formAction} className="contents" onSubmit={onSubmit}>
             {/* Clone the child element (AppContent) and pass down necessary props */}
             {React.cloneElement(children as React.ReactElement, {
                 state,
                 formAction,
-                onFormSubmit: handleSubmit, // Pass the submit handler down
+                onFormSubmit: onSubmit, // Pass the submit handler down
                 formRef // Pass the form ref down
             })}
         </form>
@@ -684,9 +680,7 @@ const FormStatusWrapper = ({ children, formAction, state }) => {
 export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
-    return (
-        <FormStatusWrapper formAction={formAction} state={state}>
-            <AppContent state={state} formAction={formAction} />
-        </FormStatusWrapper>
-    );
+    return <AppContent state={state} formAction={formAction} />;
 }
+
+    
