@@ -20,7 +20,6 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 export async function getAiResponse(
-  prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const prompt = formData.get("prompt") as string;
