@@ -325,7 +325,7 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedPrompt = useRef("");
 
-  const handleClientSideSubmit = (formData: FormData) => {
+  const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
     if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
@@ -334,7 +334,6 @@ export default function Home() {
     
     lastSubmittedPrompt.current = currentPrompt;
 
-    // Optimistic UI update
     const userMessage: Message = {
         id: Date.now(),
         sender: 'user',
@@ -595,7 +594,7 @@ export default function Home() {
   };
 
   return (
-    <form ref={formRef} action={handleClientSideSubmit} className="contents">
+    <form ref={formRef} action={handleFormSubmit} className="contents">
       {messages.length === 0 ? (
         <WelcomeView {...viewProps} />
       ) : (
