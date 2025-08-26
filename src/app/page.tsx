@@ -49,14 +49,13 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
     );
 }
 
-const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const MessageInput = ({ prompt, setPrompt, onFormSubmit, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isRecording, setIsRecording] = useState(false);
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
-    const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
@@ -72,7 +71,7 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     }, [adjustTextareaHeight, prompt]);
     
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
+      if (event.key === 'Enter' && !event.shiftKey && (prompt.trim() || uploadedImagePreview) && !pending) {
         event.preventDefault();
         // Trigger the form submission by programmatically clicking the submit button
         if (formRef.current) {
@@ -199,6 +198,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePr
                        <MessageInput 
                           prompt={prompt} 
                           setPrompt={setPrompt} 
+                          onFormSubmit={onFormSubmit}
                           formRef={formRef} 
                           uploadedImagePreview={uploadedImagePreview}
                           setUploadedImagePreview={setUploadedImagePreview}
@@ -213,10 +213,9 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePr
     );
 };
 
-const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef, uploadedImagePreview, setUploadedImagePreview, theme, toggleTheme }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
-    const [theme, setTheme] = useState('dark');
     
     const useChatActions = () => {
         const handleCopy = (text: string) => {
@@ -232,7 +231,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             setEditingMessageId(message.id);
             setPrompt(message.text);
             
-            // Focus textarea after setting prompt
             setTimeout(() => {
                 const textarea = formRef.current?.querySelector('textarea');
                 textarea?.focus();
@@ -241,14 +239,10 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
-            setPrompt(suggestion);
             
-            // Submit the form with the suggestion
-            setTimeout(() => {
-                const formData = new FormData();
-                formData.append('prompt', suggestion);
-                onFormSubmit(formData);
-            }, 0);
+            const formData = new FormData();
+            formData.append('prompt', suggestion);
+            onFormSubmit(formData);
         };
         
         const handleNewChat = () => {
@@ -265,21 +259,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
     }
 
     const chatActions = useChatActions();
-    
-    useLayoutEffect(() => {
-        const storedTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(storedTheme);
-        document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-    }, []);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => {
-            const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', newTheme);
-            document.documentElement.classList.toggle('dark', newTheme === 'dark');
-            return newTheme;
-        });
-    };
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -427,6 +406,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
               <MessageInput 
                 prompt={prompt} 
                 setPrompt={setPrompt} 
+                onFormSubmit={onFormSubmit}
                 formRef={formRef}
                 uploadedImagePreview={uploadedImagePreview}
                 setUploadedImagePreview={setUploadedImagePreview}
@@ -445,15 +425,27 @@ function AppContent({ state, formAction }) {
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [theme, setTheme] = useState('dark');
     
     const [isPending, startTransition] = useTransition();
 
-    // This is the primary effect for handling AI responses and errors
+    useLayoutEffect(() => {
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(storedTheme);
+        document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+    }, []);
+
+    const toggleTheme = () => {
+        setTheme(prevTheme => {
+            const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            document.documentElement.classList.toggle('dark', newTheme === 'dark');
+            return newTheme;
+        });
+    };
+
     useEffect(() => {
-        if (!state) return; // Initial render, do nothing
-        
-        // Don't process if the form is pending (avoids race conditions)
-        if (isPending) return;
+        if (!state) return;
 
         if (state.error) {
             toast({
@@ -461,7 +453,6 @@ function AppContent({ state, formAction }) {
                 title: "Error",
                 description: state.error,
             });
-            // If there was an error, remove the last user message that caused it
             if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
                 setMessages(prev => prev.slice(0, -1));
             }
@@ -476,12 +467,10 @@ function AppContent({ state, formAction }) {
             };
 
             if (editingMessageId !== null) {
-                // If editing, replace the placeholder for the AI response
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                     if (editedMessageIndex !== -1) {
-                         // Replace the old AI message if it exists, otherwise add a new one
                         if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
                             newMessages[editedMessageIndex + 1] = newAiMessage;
                         } else {
@@ -492,13 +481,11 @@ function AppContent({ state, formAction }) {
                 });
                 setEditingMessageId(null);
             } else {
-                // If not editing, just add the new AI message
                 setMessages((prev) => [...prev, newAiMessage]);
             }
         }
-    }, [state, isPending]);
+    }, [state]);
 
-    // Effect for auto-scrolling
     useEffect(() => {
         if (viewportRef.current) {
             viewportRef.current.scrollTo({
@@ -521,7 +508,7 @@ function AppContent({ state, formAction }) {
             id: Date.now(),
             sender: 'user',
             text: currentPrompt,
-            imageUrl: uploadedFile && uploadedFile.size > 0 ? URL.createObjectURL(uploadedFile) : undefined,
+            imageUrl: uploadedImagePreview || undefined,
         };
         
         startTransition(() => {
@@ -549,7 +536,8 @@ function AppContent({ state, formAction }) {
             setPrompt("");
             setUploadedImagePreview(null);
             if (formRef.current) {
-                formRef.current.reset();
+                const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
+                if(fileInput) fileInput.value = "";
             }
         });
     };
@@ -578,6 +566,8 @@ function AppContent({ state, formAction }) {
                     formRef={formRef}
                     uploadedImagePreview={uploadedImagePreview}
                     setUploadedImagePreview={setUploadedImagePreview}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
                 />
             )}
         </form>
@@ -590,3 +580,5 @@ function Home() {
 }
 
 export default Home;
+
+    
