@@ -65,7 +65,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
                 <div className="flex items-center justify-center gap-4 mb-4">
-                    <CrowLogo className="w-16 h-16"/>
+                    <CrowLogo className="w-20 h-20"/>
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
