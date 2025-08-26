@@ -63,9 +63,9 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
-                <div className="flex flex-col items-center justify-center gap-2 mb-4">
-                    <CrowLogo className="w-20 h-20"/>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
+                <div className="flex flex-col items-center justify-center gap-4 mb-4">
+                    <CrowLogo className="w-28 h-28"/>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
@@ -314,8 +314,8 @@ function AppContent({
     formRef,
     state,
     formAction,
+    pending,
 }) {
-    const { pending } = useFormStatus();
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
@@ -404,15 +404,13 @@ function AppContent({
     }, [messages, pending]);
 
     const handleClientSideSubmit = (formData: FormData) => {
-        if (isSubmitting.current) return;
+        if (pending) return;
 
         const currentPrompt = formData.get("prompt") as string;
         
         if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
             return;
         }
-
-        isSubmitting.current = true;
         
         const userMessage: Message = {
             id: Date.now(),
@@ -448,10 +446,6 @@ function AppContent({
         }
         
         formAction(formData);
-
-        setTimeout(() => {
-            isSubmitting.current = false;
-        }, 100);
     };
 
 
@@ -599,32 +593,53 @@ function AppContent({
 
 const FormStatusWrapper = ({ children }) => {
     const { pending } = useFormStatus();
-    // This component is just a wrapper to provide the `pending` status.
-    // The actual AppContent will be passed as children.
-    return <>{children}</>;
+    return children(pending);
 };
 
 export default function Home() {
     const formRef = useRef<HTMLFormElement>(null);
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
+    const handleSubmit = (e: FormEvent<HTMLFormElement>, formAction) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        
+        // We need access to the `pending` state here, which is tricky.
+        // A better approach would be to lift the state or use a different pattern.
+        // For now, let's rely on the check inside `handleClientSideSubmit`.
+        
+        // This is a bit of a hack to get the submit handler from the child component.
+        // It relies on the child rendering the `handleClientSideSubmit` function.
+        // A better pattern would be to lift the submit logic or use context.
+        const appContentInstance = formRef.current?.querySelector('.contents');
+        if (appContentInstance) {
+            // This is not a direct way to call the function, but illustrates the intent.
+            // The current implementation relies on the button click inside the component.
+        }
+    };
+    
     return (
         <form
             ref={formRef}
             action={formAction}
             onSubmit={(e) => {
+                // This is being handled by the `handleClientSideSubmit` in `AppContent`
+                // triggered by the button click or Enter key.
+                // We prevent default here to stop double submissions.
                 e.preventDefault();
-                // This will be handled by handleClientSideSubmit now
-                const formData = new FormData(e.currentTarget);
-                // We need to access the submit function from within AppContent
-                // A bit of a workaround: we can store the submit function in a ref
-                // or lift state. For now, let's find the button and click it.
-                // A better solution is to pass the submit handler down.
-                // The current implementation inside AppContent will handle it.
             }}
             className="contents"
         >
-           <AppContent formRef={formRef} state={state} formAction={formAction} />
+            <FormStatusWrapper>
+                {(pending) => (
+                    <AppContent
+                        formRef={formRef}
+                        state={state}
+                        formAction={formAction}
+                        pending={pending}
+                    />
+                )}
+            </FormStatusWrapper>
         </form>
     );
 }
