@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {getFlowState} from 'genkit/experimental/state';
 
 const InterpretPromptInputSchema = z.object({
   prompt: z.string().describe('The user prompt to be interpreted.'),
@@ -152,9 +153,14 @@ const interpretPromptPrompt = ai.definePrompt({
   input: {schema: InterpretPromptInputSchema},
   output: {schema: InterpretPromptOutputSchema},
   tools: [searchWeb, getLatestNews],
-  prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment. You can use markdown to format your response. For example, you can use **bold** to emphasize important points.
+  prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment.
 
-If the user asks for the latest news, use the 'getLatestNews' tool. For general questions that require web information, use the 'searchWeb' tool. List the sources you used in your response by populating the 'sources' field in the output.
+- First, analyze the user's prompt to determine the best course of action.
+- If the user asks for the latest news, use the 'getLatestNews' tool to fetch real-time news articles.
+- For general questions that require up-to-date information, use the 'searchWeb' tool.
+- After using a tool, you MUST use the information returned by the tool to formulate your response. Do not just state the information; synthesize it, summarize it, and present it in a clear, conversational manner.
+- Based on the tool's output, populate the 'sources' field in your response with the title and URL provided by the tool. Only list sources that you actually used.
+- You can use markdown to format your response (e.g., **bold**, lists).
 
 {{#if attachmentDataUri}}
 Attachment:
@@ -177,13 +183,6 @@ const interpretPromptFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await interpretPromptPrompt(input);
-    // The 'getLatestNews' tool returns results that can be directly used as sources.
-    // We will check if the tool was used and format the output as sources.
-    // For this prototype, we'll just check if the response contains tell-tale signs of news.
-    // A more robust implementation would inspect the tool calls directly.
-
-    // This is a simple way to pass sources back.
-    // A real implementation might involve inspecting `response.toolCalls`
     return output!;
   }
 );
