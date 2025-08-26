@@ -79,14 +79,17 @@ export default function Home() {
         description: state.error,
       });
     } else if (state.response || state.imageUrl) {
-      // If we were editing, update the last user message and the new AI response
       if (editingMessageId !== null) {
           setMessages(prev => {
               const newMessages = [...prev];
-              // The last message should be the user's edited message, update it.
-              // The message before that is the AI's old response, which we remove.
-              // Then add the new AI response.
-              const lastUserMessageIndex = newMessages.length -1;
+              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+
+              if (editedMessageIndex !== -1) {
+                  // Remove the old AI response that followed the edited message
+                  if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                    newMessages.splice(editedMessageIndex + 1, 1);
+                  }
+              }
               
               const newAiMessage: Message = { 
                 id: Date.now(), 
@@ -95,12 +98,6 @@ export default function Home() {
                 imageUrl: state.imageUrl || undefined
               };
 
-              // We find the message that was being edited.
-              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-              if (editedMessageIndex !== -1) {
-                  // remove all messages after the one being edited.
-                  newMessages.splice(editedMessageIndex + 1);
-              }
               return [...newMessages, newAiMessage];
           });
           setEditingMessageId(null);
@@ -156,9 +153,17 @@ export default function Home() {
     const currentPrompt = formData.get("prompt") as string;
     
     if (editingMessageId !== null) {
-        setMessages(prev => prev.map(m => 
-            m.id === editingMessageId ? { ...m, text: currentPrompt, imageUrl: attachmentPreview || m.imageUrl } : m
-        ));
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: attachmentPreview || newMessages[editedMessageIndex].imageUrl };
+                // Remove messages after the edited one
+                newMessages.splice(editedMessageIndex + 1);
+            }
+            return newMessages;
+        });
+        
         formAction(formData);
         formRef.current?.reset();
         setPrompt("");
