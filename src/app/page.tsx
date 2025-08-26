@@ -174,26 +174,22 @@ export default function Home() {
   };
 
   const handlePlayAudio = async (message: Message) => {
-    // If clicking the currently playing message, pause it.
     if (playingAudioId === message.id && audioRef.current) {
       audioRef.current.pause();
       setPlayingAudioId(null);
       return;
     }
 
-    // If another audio is playing, stop it.
     if (audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
       setPlayingAudioId(null);
     }
 
-    // Check cache first
     if (audioCache[message.id]) {
       playAudio(audioCache[message.id], message.id);
       return;
     }
 
-    // Not in cache, so fetch it.
     setLoadingAudioId(message.id);
     try {
       const result = await textToSpeechAction({ text: message.text });
@@ -293,7 +289,7 @@ export default function Home() {
                                 {loadingAudioId === message.id ? (
                                     <Loader className="h-4 w-4 animate-spin" />
                                 ) : (
-                                    <Volume2 className="h-4 w-4" />
+                                    <Volume2 className={cn("h-4 w-4", playingAudioId === message.id && "text-primary")} />
                                 )}
                                 <span className="sr-only">Read aloud</span>
                             </Button>
@@ -376,3 +372,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
