@@ -291,7 +291,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b z-10">
+        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 z-10">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>
             <div>
