@@ -132,25 +132,35 @@ export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submittedPrompt = useRef("");
+  const { pending } = useFormStatus();
 
+  useEffect(() => {
+    // This effect runs when the form is submitted
+    // We can get the prompt from the formRef
+    const form = formRef.current || document.querySelector('form');
+    if (!form) return;
 
-  const handleFormAction = (formData: FormData) => {
+    const formData = new FormData(form);
     const currentPrompt = formData.get("prompt") as string;
-    submittedPrompt.current = currentPrompt;
-
-    if (editingMessageId !== null) {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-            if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                    newMessages.splice(editedMessageIndex + 1);
-                }
-            }
-            return newMessages;
-        });
-    } else if (currentPrompt.trim() || uploadedImage) {
+    
+    // Only update messages if a new prompt was submitted and it's not pending.
+    // This prevents adding empty messages or duplicates.
+    if (!pending && (currentPrompt || uploadedImage)) {
+      submittedPrompt.current = currentPrompt;
+      if (editingMessageId !== null) {
+          setMessages(prev => {
+              const newMessages = [...prev];
+              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+              if (editedMessageIndex !== -1) {
+                  newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                  // Remove the AI message that followed the edited one
+                  if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                      newMessages.splice(editedMessageIndex + 1, 1);
+                  }
+              }
+              return newMessages;
+          });
+      } else {
         const userMessage: Message = {
             id: Date.now(),
             sender: 'user',
@@ -158,13 +168,14 @@ export default function Home() {
             imageUrl: uploadedImagePreview ?? undefined,
         };
         setMessages(prev => {
+            // Remove suggestions from previous AI message
             const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
             return [...newMessages, userMessage];
         });
+      }
     }
+  }, [pending]);
 
-    formAction(formData);
-  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -269,9 +280,11 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    const formData = new FormData();
-    formData.append("prompt", suggestion);
-    handleFormAction(formData);
+    setPrompt(suggestion);
+    // A little delay to allow the prompt to update before submitting
+    setTimeout(() => {
+        formRef.current?.requestSubmit();
+    }, 100);
   }
 
   const handleNewChat = () => {
@@ -369,7 +382,7 @@ export default function Home() {
       handleMicClick={handleMicClick}
       uploadedImagePreview={uploadedImagePreview}
       handleRemoveImage={handleRemoveImage}
-      formAction={handleFormAction}
+      formAction={formAction}
     />;
   }
 
@@ -497,7 +510,7 @@ export default function Home() {
                     )}
                   </div>
                 ))}
-                {useFormStatus().pending && (
+                {pending && (
                   <div className="flex items-start gap-2 md:gap-4">
                       <Avatar className="w-8 h-8 border shrink-0">
                          <AvatarFallback>
@@ -527,7 +540,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={handleFormAction}
+                action={formAction}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
