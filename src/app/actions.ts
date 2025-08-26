@@ -1,12 +1,13 @@
 "use server";
 
 import { interpretPrompt } from "@/ai/flows/interpret-prompt";
-import type { InterpretPromptInput } from "@/ai/flows/interpret-prompt";
+import type { InterpretPromptInput, InterpretPromptOutput } from "@/ai/flows/interpret-prompt";
 import { generateImage } from "@/ai/flows/generate-image";
 import type { GenerateImageInput } from "@/ai/flows/generate-image";
 
 interface FormState {
   response: string | null;
+  suggestions: string[] | null;
   imageUrl: string | null;
   error: string | null;
 }
@@ -25,7 +26,7 @@ export async function getAiResponse(
   const attachment = formData.get("attachment") as File | null;
 
   if ((!prompt || prompt.trim().length === 0) && !attachment) {
-    return { response: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
+    return { response: null, suggestions: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
   }
 
   try {
@@ -33,7 +34,7 @@ export async function getAiResponse(
       const imagePrompt = prompt.replace(/^(generate image of|create an image of|generate image|create an image)/i, '').trim();
       const input: GenerateImageInput = { prompt: imagePrompt };
       const result = await generateImage(input);
-      return { response: null, imageUrl: result.imageUrl, error: null };
+      return { response: null, suggestions: null, imageUrl: result.imageUrl, error: null };
     } else {
       const input: InterpretPromptInput = { prompt };
       
@@ -41,12 +42,12 @@ export async function getAiResponse(
           input.attachmentDataUri = await fileToDataUri(attachment);
       }
 
-      const result = await interpretPrompt(input);
-      return { response: result.response, imageUrl: null, error: null };
+      const result: InterpretPromptOutput = await interpretPrompt(input);
+      return { response: result.response, suggestions: result.suggestions ?? null, imageUrl: null, error: null };
     }
   } catch (error) {
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-    return { response: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
+    return { response: null, suggestions: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
   }
 }

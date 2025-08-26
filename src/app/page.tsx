@@ -17,6 +17,7 @@ import remarkGfm from 'remark-gfm';
 
 const initialState = {
   response: null,
+  suggestions: null,
   imageUrl: null,
   error: null,
 };
@@ -26,6 +27,7 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
   imageUrl?: string;
+  suggestions?: string[];
 }
 
 function SubmitButton() {
@@ -79,6 +81,14 @@ export default function Home() {
         description: state.error,
       });
     } else if (state.response || state.imageUrl) {
+      const newAiMessage: Message = { 
+        id: Date.now(), 
+        sender: 'ai', 
+        text: state.response || "",
+        imageUrl: state.imageUrl || undefined,
+        suggestions: state.suggestions || undefined,
+      };
+
       if (editingMessageId !== null) {
           setMessages(prev => {
               const newMessages = [...prev];
@@ -90,13 +100,6 @@ export default function Home() {
                     newMessages.splice(editedMessageIndex + 1, 1);
                   }
               }
-              
-              const newAiMessage: Message = { 
-                id: Date.now(), 
-                sender: 'ai', 
-                text: state.response || "",
-                imageUrl: state.imageUrl || undefined
-              };
 
               return [...newMessages, newAiMessage];
           });
@@ -104,12 +107,7 @@ export default function Home() {
       } else {
         setMessages((prev) => [
           ...prev,
-          { 
-            id: Date.now(), 
-            sender: 'ai', 
-            text: state.response || "",
-            imageUrl: state.imageUrl || undefined
-          },
+          newAiMessage,
         ]);
       }
     }
@@ -149,7 +147,7 @@ export default function Home() {
     }
   };
   
-  const handleFormAction = (formData: FormData) => {
+  const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
     if (editingMessageId !== null) {
@@ -158,7 +156,7 @@ export default function Home() {
             const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
             if (editedMessageIndex !== -1) {
                 newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: attachmentPreview || newMessages[editedMessageIndex].imageUrl };
-                // Remove messages after the edited one
+                // Remove messages after the edited one, including their suggestions
                 newMessages.splice(editedMessageIndex + 1);
             }
             return newMessages;
@@ -178,7 +176,10 @@ export default function Home() {
       if (attachmentPreview) {
           userMessage.imageUrl = attachmentPreview;
       }
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => {
+        const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+        return [...newMessages, userMessage];
+      });
       
       formAction(formData);
       formRef.current?.reset();
@@ -186,6 +187,14 @@ export default function Home() {
       handleRemoveAttachment();
     }
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setPrompt(suggestion);
+    // Directly create and submit a new form data
+    const formData = new FormData();
+    formData.append("prompt", suggestion);
+    handleFormSubmit(formData);
+  }
 
   const handleNewChat = () => {
     setMessages([]);
@@ -227,7 +236,7 @@ export default function Home() {
             <div className="mt-8">
               <form
                   ref={formRef}
-                  action={handleFormAction}
+                  action={handleFormSubmit}
                   className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
               >
                   <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
@@ -304,60 +313,80 @@ export default function Home() {
                   <div
                     key={message.id}
                     className={cn(
-                      "group flex items-start gap-2 md:gap-4",
-                      message.sender === 'user' && "justify-end"
+                      "flex flex-col",
+                      message.sender === 'user' ? "items-end" : "items-start"
                     )}
                   >
-                    {message.sender === 'ai' && (
-                      <Avatar className="w-8 h-8 border shrink-0">
-                         <AvatarFallback>
-                            <CrowLogo className="w-5 h-5 text-muted-foreground" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                     {message.sender === 'user' && (
-                      <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message)}>
-                              <Pencil size={16}/>
-                          </Button>
-                      </div>
-                     )}
-                    <div
-                      className={cn(
-                        "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
-                        message.sender === 'user' ? "user-message" : "ai-message"
+                    <div className={cn(
+                      "group flex items-start gap-2 md:gap-4 w-full",
+                      message.sender === 'user' && "justify-end"
+                    )}>
+                      {message.sender === 'ai' && (
+                        <Avatar className="w-8 h-8 border shrink-0">
+                           <AvatarFallback>
+                              <CrowLogo className="w-5 h-5 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
                       )}
-                    >
-                      {message.imageUrl && (
-                        <Image
-                            src={message.imageUrl}
-                            alt="User upload"
-                            width={300}
-                            height={300}
-                            className="rounded-lg mb-2 max-w-full h-auto"
-                        />
-                      )}
-                      {message.text && (
-                        message.sender === 'ai' ? (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.text}
-                            </ReactMarkdown>
-                        ) : (
-                            <p className="whitespace-pre-wrap">{message.text}</p>
-                        )
-                      )}
-                    </div>
-                    {message.sender === 'ai' && (
+                       {message.sender === 'user' && (
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(message.text)}>
-                                <Copy size={16}/>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message)}>
+                                <Pencil size={16}/>
                             </Button>
                         </div>
-                     )}
-                    {message.sender === 'user' && (
-                      <Avatar className="w-8 h-8 border shrink-0">
-                        <AvatarFallback><User size={16}/></AvatarFallback>
-                      </Avatar>
+                       )}
+                      <div
+                        className={cn(
+                          "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
+                          message.sender === 'user' ? "user-message" : "ai-message"
+                        )}
+                      >
+                        {message.imageUrl && (
+                          <Image
+                              src={message.imageUrl}
+                              alt="User upload"
+                              width={300}
+                              height={300}
+                              className="rounded-lg mb-2 max-w-full h-auto"
+                          />
+                        )}
+                        {message.text && (
+                          message.sender === 'ai' ? (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {message.text}
+                              </ReactMarkdown>
+                          ) : (
+                              <p className="whitespace-pre-wrap">{message.text}</p>
+                          )
+                        )}
+                      </div>
+                      {message.sender === 'ai' && (
+                          <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(message.text)}>
+                                  <Copy size={16}/>
+                              </Button>
+                          </div>
+                       )}
+                      {message.sender === 'user' && (
+                        <Avatar className="w-8 h-8 border shrink-0">
+                          <AvatarFallback><User size={16}/></AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                    {message.sender === 'ai' && message.suggestions && (
+                      <div className="flex flex-wrap gap-2 mt-2 ml-10 md:ml-12">
+                        {message.suggestions.map((suggestion, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="text-xs"
+                          >
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -395,7 +424,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={handleFormAction}
+                action={handleFormSubmit}
                 className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>

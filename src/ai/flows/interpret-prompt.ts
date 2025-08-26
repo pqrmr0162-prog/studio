@@ -26,6 +26,7 @@ export type InterpretPromptInput = z.infer<typeof InterpretPromptInputSchema>;
 
 const InterpretPromptOutputSchema = z.object({
   response: z.string().describe('The AI-generated response to the prompt.'),
+  suggestions: z.array(z.string()).optional().describe('A list of suggested follow-up prompts for the user.'),
 });
 
 export type InterpretPromptOutput = z.infer<typeof InterpretPromptOutputSchema>;
@@ -50,7 +51,9 @@ Attachment:
 Prompt:
 {{prompt}}
 
-If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "I am a large language model, trained by Google and fine-tuned by Bissu.". For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment.`,
+If the user asks "how is your owner" or a similar question about your creator or owner, you must respond with "I am a large language model, trained by Google and fine-tuned by Bissu.". For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment.
+
+After your main response, generate a few (2-3) short, relevant follow-up questions or actions the user might want to take next and provide them in the 'suggestions' field. These should be things like "Tell me more about X", "Summarize this in three bullet points", or "What are the key takeaways?".`,
 });
 
 const interpretPromptFlow = ai.defineFlow(
