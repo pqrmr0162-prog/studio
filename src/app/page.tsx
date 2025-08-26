@@ -48,7 +48,7 @@ function SubmitButton() {
   );
 }
 
-const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage }) => (
+const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, handleKeyDown }) => (
   <div className="flex flex-col h-screen bg-background">
      <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
        <div className="w-full max-w-2xl">
@@ -73,6 +73,7 @@ const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChan
                  autoComplete="off"
                  value={prompt}
                  onChange={(e) => setPrompt(e.target.value)}
+                 onKeyDown={handleKeyDown}
                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                  rows={1}
                />
@@ -246,6 +247,14 @@ export default function Home() {
       handleRemoveImage();
     }
   };
+  
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
+        event.preventDefault();
+        const formData = new FormData(formRef.current!);
+        handleFormSubmit(formData);
+    }
+  };
 
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
@@ -353,6 +362,7 @@ export default function Home() {
       handleMicClick={handleMicClick}
       uploadedImagePreview={uploadedImagePreview}
       handleRemoveImage={handleRemoveImage}
+      handleKeyDown={handleKeyDown}
     />;
   }
 
@@ -530,6 +540,7 @@ export default function Home() {
                   autoComplete="off"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                   rows={1}
                 />
