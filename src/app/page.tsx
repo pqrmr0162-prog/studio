@@ -157,7 +157,10 @@ export default function Home() {
         <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b z-10">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>
-            <h1 className="text-lg font-bold">AeonAI</h1>
+            <div>
+              <h1 className="text-lg font-bold leading-none">AeonAI</h1>
+              <p className="text-xs text-muted-foreground">by Bissu</p>
+            </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Button onClick={toggleTheme} variant="outline" size="icon">
