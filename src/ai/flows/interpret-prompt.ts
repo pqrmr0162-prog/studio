@@ -55,15 +55,43 @@ const searchWeb = ai.defineTool(
         snippet: z.string(),
     })),
   },
-  async input => {
+  async ({ query }) => {
     // In a real implementation, this would call a search engine API.
-    console.log(`Searching web for: ${input.query}`);
-    // Returning mock data for demonstration purposes.
-    return [
-        { title: 'Official Next.js Documentation', url: 'https://nextjs.org/docs', snippet: 'The official documentation for Next.js, a popular React framework.' },
-        { title: 'Genkit AI Developer Docs', url: 'https://firebase.google.com/docs/genkit', snippet: 'Genkit is an open source framework from Google that helps you build, deploy, and monitor production-ready AI apps.' },
-        { title: 'Tailwind CSS - Official Site', url: 'https://tailwindcss.com/', snippet: 'A utility-first CSS framework for rapidly building custom designs.' },
+    // For this prototype, we'll generate more realistic mock data based on the query.
+    console.log(`Simulating web search for: ${query}`);
+
+    const generateUrl = (site: string) => `https://www.${site.toLowerCase().replace(/\s/g, '')}.com/search?q=${encodeURIComponent(query)}`;
+    const generateTitle = (prefix: string) => `${prefix}: ${query}`;
+    const generateSnippet = (site: string) => `A detailed article from ${site} explaining various aspects of ${query}.`;
+
+    const mockData = [
+      { 
+        title: generateTitle('Wikipedia'), 
+        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
+        snippet: `The Wikipedia entry for ${query}, providing a comprehensive overview.`
+      },
+      { 
+        title: generateTitle('TechCrunch'), 
+        url: generateUrl('TechCrunch'), 
+        snippet: generateSnippet('TechCrunch') 
+      },
+      { 
+        title: generateTitle('Investopedia'), 
+        url: generateUrl('Investopedia'), 
+        snippet: generateSnippet('Investopedia') 
+      },
     ];
+
+    // If the query is about a known technology, provide more specific links.
+    if (/next\.js|genkit|tailwind/i.test(query)) {
+        return [
+            { title: 'Official Next.js Documentation', url: 'https://nextjs.org/docs', snippet: 'The official documentation for Next.js, a popular React framework.' },
+            { title: 'Genkit AI Developer Docs', url: 'https://firebase.google.com/docs/genkit', snippet: 'Genkit is an open source framework from Google that helps you build, deploy, and monitor production-ready AI apps.' },
+            { title: 'Tailwind CSS - Official Site', url: 'https://tailwindcss.com/', snippet: 'A utility-first CSS framework for rapidly building custom designs.' },
+        ];
+    }
+    
+    return mockData;
   }
 );
 
