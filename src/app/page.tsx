@@ -49,46 +49,6 @@ function SubmitButton() {
   );
 }
 
-function useChatActions({ setMessages, setPrompt, setEditingMessageId, handleFormSubmit, pending }) {
-    const { toast } = useToast();
-
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: "Copied!",
-            description: "The message has been copied to your clipboard.",
-        });
-    };
-    
-    const handleEdit = (message: Message) => {
-        if (pending) return;
-        setEditingMessageId(message.id);
-        setPrompt(message.text);
-    };
-    
-    const handleSuggestionClick = (suggestion: string) => {
-        if (pending) return;
-        const newPrompt = suggestion;
-        setPrompt(newPrompt);
-        
-        const formData = new FormData();
-        formData.append('prompt', newPrompt);
-        
-        setTimeout(() => {
-            handleFormSubmit(formData, true);
-        }, 100);
-    };
-    
-    const handleNewChat = () => {
-        setMessages([]);
-        setPrompt("");
-        setEditingMessageId(null);
-    };
-
-    return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
-}
-
-
 const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
     const { pending } = useFormStatus();
     const formRef = useRef<HTMLFormElement>(null);
@@ -99,14 +59,19 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
 
-    const adjustTextareaHeight = () => {
+    const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    };
+    }, []);
 
-    useEffect(adjustTextareaHeight, [prompt]);
+    useEffect(() => {
+        adjustTextareaHeight();
+        window.addEventListener('resize', adjustTextareaHeight);
+        return () => window.removeEventListener('resize', adjustTextareaHeight);
+    }, [adjustTextareaHeight]);
+
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
@@ -181,11 +146,11 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
 
 
     return (
-        <form ref={formRef} onSubmit={(e) => { e.preventDefault(); onFormSubmit(new FormData(e.currentTarget)); }} className="flex flex-col h-screen bg-background">
-            <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+        <div className="flex flex-col h-screen bg-background p-4 sm:p-6 md:p-8">
+            <main className="flex-1 flex flex-col items-center justify-center text-center">
                 <div className="w-full max-w-2xl">
                     <div className="flex flex-col items-center justify-center gap-2 mb-4">
-                        <CrowLogo className="w-28 h-28"/>
+                        <CrowLogo className="w-28 h-28 sm:w-32 sm:h-32"/>
                         <h1 className="text-3xl sm:text-4xl font-bold">AeonAI</h1>
                     </div>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
@@ -203,7 +168,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                             placeholder="Message AeonAI..."
                             autoComplete="off"
                             value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
+                            onChange={(e) => {setPrompt(e.target.value); adjustTextareaHeight();}}
                             onKeyDown={handleKeyDown}
                             className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                             rows={1}
@@ -230,7 +195,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
             <footer className="text-center p-4 text-xs text-muted-foreground">
                 Developed by Bissu
             </footer>
-        </form>
+        </div>
     );
 };
 
@@ -251,6 +216,45 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             fileInputRef.current.value = "";
         }
     }, []);
+    
+    const useChatActions = ({ setMessages, setPrompt, setEditingMessageId, handleFormSubmit, pending }) => {
+        const { toast } = useToast();
+
+        const handleCopy = (text: string) => {
+            navigator.clipboard.writeText(text);
+            toast({
+                title: "Copied!",
+                description: "The message has been copied to your clipboard.",
+            });
+        };
+        
+        const handleEdit = (message: Message) => {
+            if (pending) return;
+            setEditingMessageId(message.id);
+            setPrompt(message.text);
+        };
+        
+        const handleSuggestionClick = (suggestion: string) => {
+            if (pending) return;
+            const newPrompt = suggestion;
+            setPrompt(newPrompt);
+            
+            const formData = new FormData();
+            formData.append('prompt', newPrompt);
+            
+            setTimeout(() => {
+                handleFormSubmit(formData, true);
+            }, 100);
+        };
+        
+        const handleNewChat = () => {
+            setMessages([]);
+            setPrompt("");
+            setEditingMessageId(null);
+        };
+
+        return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
+    }
 
     const chatActions = useChatActions({
         setMessages,
@@ -270,14 +274,18 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         document.documentElement.classList.toggle('light', storedTheme !== 'dark');
     }, []);
     
-    const adjustTextareaHeight = () => {
+    const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    };
-    
-    useEffect(adjustTextareaHeight, [prompt]);
+    }, []);
+
+    useEffect(() => {
+        adjustTextareaHeight();
+        window.addEventListener('resize', adjustTextareaHeight);
+        return () => window.removeEventListener('resize', adjustTextareaHeight);
+    }, [adjustTextareaHeight]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
@@ -486,9 +494,9 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                              </AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-1.5 py-3">
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
-                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"></div>
                           </div>
                       </div>
                     )}
@@ -519,7 +527,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         placeholder="Message AeonAI..."
                         autoComplete="off"
                         value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
+                        onChange={(e) => {setPrompt(e.target.value); adjustTextareaHeight();}}
                         onKeyDown={handleKeyDown}
                         className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                         rows={1}
@@ -550,12 +558,9 @@ function AppContent({ state, formAction }) {
     const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
-        if (!state || !initialToastShown.current) {
-            initialToastShown.current = true;
-            return;
-        }
-
-        if (state.error) {
+        if (!state) return;
+    
+        if (state.error && initialToastShown.current) {
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -564,7 +569,7 @@ function AppContent({ state, formAction }) {
             if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
                 setMessages(prev => prev.slice(0, -1));
             }
-        } else if (state.response || state.imageUrl) {
+        } else if ((state.response || state.imageUrl) && initialToastShown.current) {
             const newAiMessage: Message = {
                 id: Date.now(),
                 sender: 'ai',
@@ -579,7 +584,7 @@ function AppContent({ state, formAction }) {
                     const newMessages = [...prev];
                     const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                     if (editedMessageIndex !== -1) {
-                        newMessages[editedMessageIndex + 1] = newAiMessage; // Replace the AI message that follows
+                        newMessages[editedMessageIndex + 1] = newAiMessage;
                     }
                     return newMessages;
                 });
@@ -588,6 +593,11 @@ function AppContent({ state, formAction }) {
                 setMessages((prev) => [...prev, newAiMessage]);
             }
         }
+        
+        if (!initialToastShown.current) {
+          initialToastShown.current = true;
+        }
+
     }, [state]);
 
     useEffect(() => {
@@ -630,7 +640,6 @@ function AppContent({ state, formAction }) {
             });
         } else {
              setMessages(prev => {
-                // Remove suggestions from the last AI message
                 const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
                 return [...newMessages, userMessage];
             });
@@ -652,9 +661,23 @@ function AppContent({ state, formAction }) {
         }
         
     }, [pending, isPending, editingMessageId, formAction, setMessages, setPrompt, setEditingMessageId, startTransition]);
+    
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        const promptValue = formData.get('prompt')?.toString().trim();
+        const fileValue = formData.get('uploadedFile') as File;
+
+        if ((promptValue && promptValue.length > 0) || (fileValue && fileValue.size > 0)) {
+            handleFormSubmit(formData);
+        }
+    };
+
 
     return (
-        <>
+        <form onSubmit={handleSubmit} className="contents">
             {messages.length === 0 && !pending ? (
                  <WelcomeView onFormSubmit={handleFormSubmit} prompt={prompt} setPrompt={setPrompt} />
             ) : (
@@ -669,14 +692,16 @@ function AppContent({ state, formAction }) {
                     setEditingMessageId={setEditingMessageId}
                 />
             )}
-        </>
+        </form>
     )
 }
 
 function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
-    return <AppContent state={state} formAction={formAction} />;
+    return (
+      <AppContent state={state} formAction={formAction} />
+    );
 }
 
 export default Home;
