@@ -264,7 +264,7 @@ export default function Home() {
             <form
                 ref={formRef}
                 action={handleFormAction}
-                className="flex items-center gap-2 md:gap-4 p-2 rounded-full bg-card border shadow-sm"
+                className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
                     <Paperclip className="h-5 w-5" />
@@ -294,4 +294,3 @@ export default function Home() {
     </div>
   );
 }
-
