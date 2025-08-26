@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -50,62 +50,60 @@ function SubmitButton() {
   );
 }
 
-const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, handleKeyDown }) => (
-  <div className="flex flex-col h-screen bg-background">
-     <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
-       <div className="w-full max-w-2xl">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <CrowLogo className="w-16 h-16 md:w-20 md:h-20 text-primary"/>
-            <h1 className="text-4xl md:text-5xl font-bold">AeonAI</h1>
-          </div>
-         <h2 className="text-2xl md:text-3xl font-bold">How can I help you today?</h2>
-         <div className="mt-8">
-           <form
-               ref={formRef}
-               action={handleFormSubmit}
-               className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
-           >
-               <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                   <Paperclip className="h-5 w-5" />
-                   <span className="sr-only">Upload file</span>
-               </Button>
-               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
-
-               <Textarea
-                 ref={textareaRef}
-                 name="prompt"
-                 placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
-                 autoComplete="off"
-                 value={prompt}
-                 onChange={(e) => setPrompt(e.target.value)}
-                 onKeyDown={handleKeyDown}
-                 className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
-                 rows={1}
-               />
-               <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
-                   <Mic className="h-5 w-5" />
-                   <span className="sr-only">Use microphone</span>
-               </Button>
-               <SubmitButton />
-           </form>
-           {uploadedImagePreview && (
-               <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
-                   <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                   <span className="text-sm truncate">Image attached</span>
-                   <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
-                       <X className="h-4 w-4" />
-                   </Button>
-               </div>
-           )}
+const WelcomeScreen = ({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, handleKeyDown }) => (
+    <div className="flex flex-col h-screen bg-background">
+       <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+         <div className="w-full max-w-2xl">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <CrowLogo className="w-16 h-16 md:w-20 md:h-20 text-primary"/>
+              <h1 className="text-4xl md:text-5xl font-bold">AeonAI</h1>
+            </div>
+           <h2 className="text-2xl md:text-3xl font-bold">How can I help you today?</h2>
+           <div className="mt-8">
+             <form
+                 action={handleFormSubmit}
+                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
+             >
+                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                     <Paperclip className="h-5 w-5" />
+                     <span className="sr-only">Upload file</span>
+                 </Button>
+                 <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" />
+  
+                 <Textarea
+                   ref={textareaRef}
+                   name="prompt"
+                   placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                   autoComplete="off"
+                   value={prompt}
+                   onChange={(e) => setPrompt(e.target.value)}
+                   onKeyDown={handleKeyDown}
+                   className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                   rows={1}
+                 />
+                 <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                     <Mic className="h-5 w-5" />
+                     <span className="sr-only">Use microphone</span>
+                 </Button>
+                 <SubmitButton />
+             </form>
+             {uploadedImagePreview && (
+                 <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
+                     <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                     <span className="text-sm truncate">Image attached</span>
+                     <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
+                         <X className="h-4 w-4" />
+                     </Button>
+                 </div>
+             )}
+           </div>
          </div>
-       </div>
-     </main>
-     <footer className="text-center p-4 text-xs text-muted-foreground">
-       Created by Bissu
-     </footer>
-   </div>
-);
-
+       </main>
+       <footer className="text-center p-4 text-xs text-muted-foreground">
+         Created by Bissu
+       </footer>
+     </div>
+  );
 
 export default function Home() {
   const [state, formAction] = useActionState(getAiResponse, initialState);
@@ -198,6 +196,11 @@ export default function Home() {
           audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
         }
       }
+      
+      formRef.current?.reset();
+      setPrompt("");
+      handleRemoveImage();
+
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, toast]);
@@ -222,10 +225,6 @@ export default function Home() {
   const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
-    if (uploadedImage) {
-        formData.append("uploadedFile", uploadedImage, uploadedImage.name);
-    }
-
     if (editingMessageId !== null) {
         setMessages(prev => {
             const newMessages = [...prev];
@@ -237,12 +236,6 @@ export default function Home() {
             }
             return newMessages;
         });
-        
-        formAction(formData);
-        formRef.current?.reset();
-        setPrompt("");
-        handleRemoveImage();
-
     } else if (currentPrompt.trim() || uploadedImage) {
       const userMessage: Message = {
         id: Date.now(),
@@ -255,26 +248,19 @@ export default function Home() {
         const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
         return [...newMessages, userMessage];
       });
-      
-      formAction(formData);
-      formRef.current?.reset();
-      setPrompt("");
-      handleRemoveImage();
     }
+
+    formAction(formData);
   };
   
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        if (formRef.current) {
-            const formData = new FormData(formRef.current);
-            handleFormSubmit(formData);
-        }
+        formRef.current?.requestSubmit();
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setPrompt(suggestion);
     const formData = new FormData();
     formData.append("prompt", suggestion);
     handleFormSubmit(formData);
@@ -368,7 +354,6 @@ export default function Home() {
 
   if (messages.length === 0) {
     return <WelcomeScreen 
-      formRef={formRef}
       handleFormSubmit={handleFormSubmit}
       fileInputRef={fileInputRef}
       handleFileChange={handleFileChange}
@@ -545,7 +530,7 @@ export default function Home() {
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Upload file</span>
                 </Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,application/pdf,.txt,.md" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" />
 
                 <Textarea
                   ref={textareaRef}
