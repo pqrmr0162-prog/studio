@@ -12,6 +12,8 @@ import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const initialState = {
   response: null,
@@ -51,7 +53,6 @@ export default function Home() {
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export default function Home() {
             </Button>
           </div>
         </header>
-        <div className="flex-1 overflow-y-hidden">
+        <div className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6">
                 {messages.length === 0 && (
@@ -196,7 +197,7 @@ export default function Home() {
                     )}
                     <div
                       className={cn(
-                        "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm",
+                        "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
                         message.sender === 'user' ? "user-message" : "ai-message"
                       )}
                     >
@@ -209,7 +210,15 @@ export default function Home() {
                             className="rounded-lg mb-2 max-w-full h-auto"
                         />
                       )}
-                      {message.text && <p className="whitespace-pre-wrap">{message.text}</p>}
+                      {message.text && (
+                        message.sender === 'ai' ? (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {message.text}
+                            </ReactMarkdown>
+                        ) : (
+                            <p className="whitespace-pre-wrap">{message.text}</p>
+                        )
+                      )}
                     </div>
                     {message.sender === 'user' && (
                       <Avatar className="w-8 h-8 border shrink-0">

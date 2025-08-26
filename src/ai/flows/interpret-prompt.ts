@@ -40,7 +40,7 @@ const interpretPromptPrompt = ai.definePrompt({
   name: 'interpretPromptPrompt',
   input: {schema: InterpretPromptInputSchema},
   output: {schema: InterpretPromptOutputSchema},
-  prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment.
+  prompt: `You are an intelligent AI assistant. A user has provided the following prompt and, optionally, an attachment. You can use markdown to format your response. For example, you can use **bold** to emphasize important points.
 
 {{#if attachmentDataUri}}
 Attachment:
