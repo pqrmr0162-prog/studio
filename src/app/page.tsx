@@ -50,8 +50,10 @@ function SubmitButton() {
 }
 
 const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit }) {
+    const { pending } = useFormStatus();
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
+      if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         if (formRef.current) {
             onSubmit(new FormData(formRef.current));
@@ -71,11 +73,11 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
                 <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                         <Paperclip className="h-5 w-5" />
                         <span className="sr-only">Upload file</span>
                     </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
     
                     <Textarea
                         ref={textareaRef}
@@ -87,8 +89,9 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
                         onKeyDown={handleKeyDown}
                         className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                         rows={1}
+                        disabled={pending}
                     />
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
                         <Mic className="h-5 w-5" />
                         <span className="sr-only">Use microphone</span>
                     </Button>
@@ -98,7 +101,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
                     <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
                         <span className="text-sm truncate">Image attached</span>
-                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
+                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
@@ -118,7 +121,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
     const { pending } = useFormStatus();
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
+      if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
           if (formRef.current) {
             onSubmit(new FormData(formRef.current));
@@ -242,6 +245,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                                 size="sm"
                                 onClick={() => handleSuggestionClick(suggestion)}
                                 className="text-xs"
+                                disabled={pending}
                               >
                                 {suggestion}
                               </Button>
@@ -274,17 +278,17 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                     <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
                         <span className="text-sm truncate">Image attached</span>
-                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
+                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
                 )}
                 <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                         <Paperclip className="h-5 w-5" />
                         <span className="sr-only">Upload file</span>
                     </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
 
                     <Textarea
                       ref={textareaRef}
@@ -296,8 +300,9 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                       onKeyDown={handleKeyDown}
                       className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                       rows={1}
+                      disabled={pending}
                     />
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick}>
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
                         <Mic className="h-5 w-5" />
                         <span className="sr-only">Use microphone</span>
                     </Button>
@@ -461,6 +466,7 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    if (pending) return;
     setPrompt(suggestion);
     setTimeout(() => {
         if (formRef.current) {
@@ -488,6 +494,7 @@ export default function Home() {
   }
 
   const handleEdit = (message: Message) => {
+    if (pending) return;
     setEditingMessageId(message.id);
     setPrompt(message.text);
     if (message.imageUrl) {
@@ -499,7 +506,7 @@ export default function Home() {
   }
 
   const handleMicClick = () => {
-    if (isRecording) {
+    if (pending || isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
       return;
