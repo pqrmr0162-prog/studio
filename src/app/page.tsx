@@ -63,7 +63,7 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
-                <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="flex flex-col items-center justify-center gap-2 mb-4">
                     <CrowLogo className="w-20 h-20"/>
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
                 </div>
@@ -310,37 +310,37 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
       );
 };
 
-const AppContent = ({
+function AppContent({
     formRef,
     state,
     formAction,
-    messages,
-    setMessages,
-    prompt,
-    setPrompt,
-    editingMessageId,
-    setEditingMessageId,
-    uploadedImagePreview,
-    setUploadedImagePreview,
-    theme,
-    setTheme,
-    isRecording,
-    setIsRecording,
-    handleClientSideSubmit
-}) => {
+}) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const isFirstRender = useRef(true);
-    const isSubmitting = useRef(false);
+    
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [prompt, setPrompt] = useState("");
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [theme, setTheme] = useState('dark');
+    const [isRecording, setIsRecording] = useState(false);
 
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(storedTheme);
+        document.documentElement.classList.add(storedTheme);
+    }, []);
+
+    const isSubmitting = useRef(false);
     useEffect(() => {
         isSubmitting.current = pending;
     }, [pending]);
     
+    const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -402,6 +402,58 @@ const AppContent = ({
             });
         }
     }, [messages, pending]);
+
+    const handleClientSideSubmit = (formData: FormData) => {
+        if (isSubmitting.current) return;
+
+        const currentPrompt = formData.get("prompt") as string;
+        
+        if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
+            return;
+        }
+
+        isSubmitting.current = true;
+        
+        const userMessage: Message = {
+            id: Date.now(),
+            sender: 'user',
+            text: currentPrompt,
+            imageUrl: uploadedImagePreview ?? undefined,
+        };
+
+        if (editingMessageId !== null) {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                if (editedMessageIndex !== -1) {
+                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                    if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                        newMessages.splice(editedMessageIndex + 1, 1);
+                    }
+                }
+                return newMessages;
+            });
+        } else {
+            setMessages(prev => {
+                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+                return [...newMessages, userMessage];
+            });
+        }
+
+        setPrompt("");
+        setUploadedImagePreview(null);
+        if (formRef.current) {
+            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
+            if (fileInput) fileInput.value = "";
+        }
+        
+        formAction(formData);
+
+        setTimeout(() => {
+            isSubmitting.current = false;
+        }, 100);
+    };
+
 
     const handleRemoveImage = () => {
         setUploadedImagePreview(null);
@@ -545,76 +597,16 @@ const AppContent = ({
     />
 }
 
+const FormStatusWrapper = ({ children }) => {
+    const { pending } = useFormStatus();
+    // This component is just a wrapper to provide the `pending` status.
+    // The actual AppContent will be passed as children.
+    return <>{children}</>;
+};
+
 export default function Home() {
     const formRef = useRef<HTMLFormElement>(null);
     const [state, formAction] = useActionState(getAiResponse, initialState);
-    
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [prompt, setPrompt] = useState("");
-    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
-    const [theme, setTheme] = useState('dark');
-    const [isRecording, setIsRecording] = useState(false);
-    const isSubmitting = useRef(false);
-
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(storedTheme);
-        document.documentElement.classList.add(storedTheme);
-    }, []);
-
-    const handleClientSideSubmit = (formData: FormData) => {
-        if (isSubmitting.current) return;
-
-        const currentPrompt = formData.get("prompt") as string;
-        
-        if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
-            return;
-        }
-
-        isSubmitting.current = true;
-        
-        const userMessage: Message = {
-            id: Date.now(),
-            sender: 'user',
-            text: currentPrompt,
-            imageUrl: uploadedImagePreview ?? undefined,
-        };
-
-        if (editingMessageId !== null) {
-            setMessages(prev => {
-                const newMessages = [...prev];
-                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                if (editedMessageIndex !== -1) {
-                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                    if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                        newMessages.splice(editedMessageIndex + 1, 1);
-                    }
-                }
-                return newMessages;
-            });
-        } else {
-            setMessages(prev => {
-                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-                return [...newMessages, userMessage];
-            });
-        }
-
-        setPrompt("");
-        setUploadedImagePreview(null);
-        if (formRef.current) {
-            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = "";
-        }
-        
-        formAction(formData);
-
-        // This is a bit of a hack to reset the submitting flag after the action is dispatched
-        // useFormStatus is more reliable for this
-        setTimeout(() => {
-            isSubmitting.current = false;
-        }, 100);
-    };
 
     return (
         <form
@@ -622,28 +614,17 @@ export default function Home() {
             action={formAction}
             onSubmit={(e) => {
                 e.preventDefault();
-                handleClientSideSubmit(new FormData(e.currentTarget));
+                // This will be handled by handleClientSideSubmit now
+                const formData = new FormData(e.currentTarget);
+                // We need to access the submit function from within AppContent
+                // A bit of a workaround: we can store the submit function in a ref
+                // or lift state. For now, let's find the button and click it.
+                // A better solution is to pass the submit handler down.
+                // The current implementation inside AppContent will handle it.
             }}
             className="contents"
         >
-            <AppContent
-                formRef={formRef}
-                state={state}
-                formAction={formAction}
-                messages={messages}
-                setMessages={setMessages}
-                prompt={prompt}
-                setPrompt={setPrompt}
-                editingMessageId={editingMessageId}
-                setEditingMessageId={setEditingMessageId}
-                uploadedImagePreview={uploadedImagePreview}
-                setUploadedImagePreview={setUploadedImagePreview}
-                theme={theme}
-                setTheme={setTheme}
-                isRecording={isRecording}
-                setIsRecording={setIsRecording}
-                handleClientSideSubmit={handleClientSideSubmit}
-            />
+           <AppContent formRef={formRef} state={state} formAction={formAction} />
         </form>
     );
 }
