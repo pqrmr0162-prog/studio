@@ -82,13 +82,17 @@ export default function Home() {
   }, []);
   
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-    localStorage.setItem('theme', theme);
+    if (theme) {
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(theme);
+      localStorage.setItem('theme', theme);
+    }
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('voice', selectedVoice);
+    if (selectedVoice) {
+      localStorage.setItem('voice', selectedVoice);
+    }
   }, [selectedVoice]);
 
   useEffect(() => {
