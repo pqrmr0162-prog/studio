@@ -54,7 +54,8 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         if (formRef.current) {
-            onSubmit(new FormData(formRef.current));
+            const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+            formRef.current.dispatchEvent(submitEvent);
         }
       }
     };
@@ -63,37 +64,39 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
-                <div className="flex flex-col items-center justify-center gap-4 mb-4">
+                <div className="flex flex-col items-center justify-center gap-2 mb-4">
                     <CrowLogo className="w-28 h-28"/>
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                        <Paperclip className="h-5 w-5" />
-                        <span className="sr-only">Upload file</span>
-                    </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
-    
-                    <Textarea
-                        ref={textareaRef}
-                        name="prompt"
-                        placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
-                        autoComplete="off"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
-                        rows={1}
-                        disabled={pending}
-                    />
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                        <Mic className="h-5 w-5" />
-                        <span className="sr-only">Use microphone</span>
-                    </Button>
-                    <SubmitButton />
-                </div>
+                <form ref={formRef} action={onSubmit as any} className="contents">
+                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                            <Paperclip className="h-5 w-5" />
+                            <span className="sr-only">Upload file</span>
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
+        
+                        <Textarea
+                            ref={textareaRef}
+                            name="prompt"
+                            placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                            autoComplete="off"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                            rows={1}
+                            disabled={pending}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+                            <Mic className="h-5 w-5" />
+                            <span className="sr-only">Use microphone</span>
+                        </Button>
+                        <SubmitButton />
+                    </div>
+                </form>
                 {uploadedImagePreview && (
                     <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
@@ -119,7 +122,8 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
           if (formRef.current) {
-            onSubmit(new FormData(formRef.current));
+            const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+            formRef.current.dispatchEvent(submitEvent);
           }
       }
     };
@@ -267,56 +271,56 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-              <form ref={formRef} action={onSubmit as any} className="contents">
-                <div className="max-w-4xl mx-auto w-full">
-                {uploadedImagePreview && (
-                    <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
-                        <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                        <span className="text-sm truncate">Image attached</span>
-                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
-                            <X className="h-4 w-4" />
+                <form ref={formRef} action={onSubmit as any} className="contents">
+                    <div className="max-w-4xl mx-auto w-full">
+                    {uploadedImagePreview && (
+                        <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
+                            <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                            <span className="text-sm truncate">Image attached</span>
+                            <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                            <Paperclip className="h-5 w-5" />
+                            <span className="sr-only">Upload file</span>
                         </Button>
-                    </div>
-                )}
-                <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
-                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                        <Paperclip className="h-5 w-5" />
-                        <span className="sr-only">Upload file</span>
-                    </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
 
-                    <Textarea
-                      ref={textareaRef}
-                      name="prompt"
-                      placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
-                      autoComplete="off"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
-                      rows={1}
-                      disabled={pending}
-                    />
-                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                        <Mic className="h-5 w-5" />
-                        <span className="sr-only">Use microphone</span>
-                    </Button>
-                    <SubmitButton />
-                </div>
-                </div>
-               </form>
+                        <Textarea
+                        ref={textareaRef}
+                        name="prompt"
+                        placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
+                        autoComplete="off"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                        rows={1}
+                        disabled={pending}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+                            <Mic className="h-5 w-5" />
+                            <span className="sr-only">Use microphone</span>
+                        </Button>
+                        <SubmitButton />
+                    </div>
+                    </div>
+                </form>
             </footer>
         </div>
       );
 };
 
 function AppContent({
-    formRef,
     state,
     formAction,
     pending,
 }) {
     const { toast } = useToast();
+    const formRef = useRef<HTMLFormElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -335,11 +339,6 @@ function AppContent({
         document.documentElement.classList.add(storedTheme);
     }, []);
 
-    const isSubmitting = useRef(false);
-    useEffect(() => {
-        isSubmitting.current = pending;
-    }, [pending]);
-    
     const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) {
@@ -463,7 +462,8 @@ function AppContent({
             if (formRef.current) {
                 const formData = new FormData(formRef.current);
                 formData.set('prompt', suggestion);
-                handleClientSideSubmit(formData);
+                const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+                formRef.current.dispatchEvent(submitEvent);
             }
         }, 100);
     }
@@ -591,49 +591,23 @@ function AppContent({
     />
 }
 
+// Wrapper component to provide form status
 const FormStatusWrapper = ({ children }) => {
     const { pending } = useFormStatus();
     return children(pending);
 };
 
 export default function Home() {
-    const formRef = useRef<HTMLFormElement>(null);
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>, formAction) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        
-        // We need access to the `pending` state here, which is tricky.
-        // A better approach would be to lift the state or use a different pattern.
-        // For now, let's rely on the check inside `handleClientSideSubmit`.
-        
-        // This is a bit of a hack to get the submit handler from the child component.
-        // It relies on the child rendering the `handleClientSideSubmit` function.
-        // A better pattern would be to lift the submit logic or use context.
-        const appContentInstance = formRef.current?.querySelector('.contents');
-        if (appContentInstance) {
-            // This is not a direct way to call the function, but illustrates the intent.
-            // The current implementation relies on the button click inside the component.
-        }
-    };
-    
     return (
         <form
-            ref={formRef}
             action={formAction}
-            onSubmit={(e) => {
-                // This is being handled by the `handleClientSideSubmit` in `AppContent`
-                // triggered by the button click or Enter key.
-                // We prevent default here to stop double submissions.
-                e.preventDefault();
-            }}
             className="contents"
         >
             <FormStatusWrapper>
                 {(pending) => (
                     <AppContent
-                        formRef={formRef}
                         state={state}
                         formAction={formAction}
                         pending={pending}
