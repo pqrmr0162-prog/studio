@@ -2,13 +2,13 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { getAiResponse } from "@/app/actions";
+import { getAiResponse, textToSpeechAction } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -47,9 +47,14 @@ export default function Home() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
+  const [playingAudio, setPlayingAudio] = useState<number | null>(null);
+  const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
+
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -140,6 +145,49 @@ export default function Home() {
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
+
+  const handlePlayAudio = async (message: Message) => {
+    if (playingAudio === message.id) {
+        audioRef.current?.pause();
+        setPlayingAudio(null);
+        return;
+    }
+    
+    setLoadingAudio(message.id);
+    try {
+        const result = await textToSpeechAction(message.text);
+        if (result.error) {
+            toast({
+                variant: "destructive",
+                title: "Audio Error",
+                description: result.error,
+            });
+            return;
+        }
+
+        if(result.audioDataUri) {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            const newAudio = new Audio(result.audioDataUri);
+            audioRef.current = newAudio;
+
+            newAudio.play();
+            setPlayingAudio(message.id);
+            newAudio.onended = () => {
+                setPlayingAudio(null);
+            };
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Audio Error",
+            description: "Failed to play audio.",
+        });
+    } finally {
+        setLoadingAudio(null);
+    }
+  };
   
   return (
     <div className="flex h-screen bg-background">
@@ -201,6 +249,24 @@ export default function Home() {
                         />
                       )}
                       <p className="whitespace-pre-wrap">{message.text}</p>
+                       {message.sender === 'ai' && (
+                        <div className="flex justify-end mt-2">
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                onClick={() => handlePlayAudio(message)}
+                                disabled={loadingAudio === message.id}
+                            >
+                                {loadingAudio === message.id ? (
+                                    <Loader className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Volume2 className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Read aloud</span>
+                            </Button>
+                        </div>
+                       )}
                     </div>
                     {message.sender === 'user' && (
                       <Avatar className="w-8 h-8 border shrink-0">

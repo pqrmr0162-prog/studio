@@ -2,10 +2,16 @@
 
 import { interpretPrompt } from "@/ai/flows/interpret-prompt";
 import type { InterpretPromptInput } from "@/ai/flows/interpret-prompt";
+import { textToSpeech } from "@/ai/flows/text-to-speech";
 
 interface FormState {
   response: string | null;
   error: string | null;
+}
+
+interface AudioState {
+    audioDataUri: string | null;
+    error: string | null;
 }
 
 async function fileToDataUri(file: File): Promise<string> {
@@ -39,4 +45,20 @@ export async function getAiResponse(
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
     return { response: null, error: `AI Error: ${errorMessage}` };
   }
+}
+
+export async function textToSpeechAction(
+    text: string
+): Promise<AudioState> {
+    if (!text) {
+        return { audioDataUri: null, error: "No text provided to synthesize." };
+    }
+    try {
+        const result = await textToSpeech(text);
+        return { audioDataUri: result.audioDataUri, error: null };
+    } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+        return { audioDataUri: null, error: `Speech synthesis error: ${errorMessage}` };
+    }
 }
