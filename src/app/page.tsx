@@ -545,7 +545,6 @@ function AppContent({ state, formAction }) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-    const { pending } = useFormStatus();
 
     const [isPending, startTransition] = useTransition();
 
@@ -599,10 +598,10 @@ function AppContent({ state, formAction }) {
                 behavior: 'smooth',
             });
         }
-    }, [messages, pending]);
+    }, [messages, isPending]);
 
     const handleFormSubmit = useCallback((formData: FormData) => {
-        if (pending || isPending) return;
+        if (isPending) return;
 
         const currentPrompt = formData.get("prompt") as string;
         const uploadedFile = formData.get("uploadedFile") as File;
@@ -653,7 +652,7 @@ function AppContent({ state, formAction }) {
             }
         }
         
-    }, [pending, isPending, editingMessageId, formAction, setMessages, setPrompt, setEditingMessageId, startTransition]);
+    }, [isPending, editingMessageId, formAction, setMessages, setPrompt, setEditingMessageId, startTransition]);
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -664,7 +663,7 @@ function AppContent({ state, formAction }) {
 
     return (
         <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="contents">
-            {messages.length === 0 && !pending ? (
+            {messages.length === 0 && !isPending ? (
                  <WelcomeView onFormSubmit={handleFormSubmit} prompt={prompt} setPrompt={setPrompt} formRef={formRef} />
             ) : (
                 <ChatView
@@ -692,5 +691,3 @@ function Home() {
 }
 
 export default Home;
-
-    
