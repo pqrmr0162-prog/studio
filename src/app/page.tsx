@@ -51,6 +51,7 @@ export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -83,9 +84,9 @@ export default function Home() {
   }, [state, toast]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({
+        top: viewportRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
@@ -145,9 +146,8 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <div className="flex flex-col flex-1">
-        <header className="flex items-center gap-2 md:gap-4 p-2 md:p-4 border-b">
+    <div className="flex flex-col h-screen bg-background">
+        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 border-b">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>
             <h1 className="text-lg font-bold">AeonAI</h1>
@@ -163,9 +163,9 @@ export default function Home() {
             </Button>
           </div>
         </header>
-        <main className="flex-1 flex flex-col p-2 md:p-6">
-            <ScrollArea className="flex-1 px-2 md:px-4" ref={scrollAreaRef}>
-              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto">
+            <ScrollArea className="h-full" viewportRef={viewportRef}>
+              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground pt-10 md:pt-20">
                         <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mb-4 text-primary"/>
@@ -230,54 +230,52 @@ export default function Home() {
                 )}
               </div>
             </ScrollArea>
-            
-            <footer className="mt-auto pt-2 md:pt-4">
-              <div className="max-w-4xl mx-auto w-full">
-                {attachment && (
-                    <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
-                        {attachmentPreview ? (
-                            <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                        ) : (
-                            <Paperclip className="h-6 w-6" />
-                        )}
-                        <span className="text-sm truncate">{attachment.name}</span>
-                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-                <form
-                  ref={formRef}
-                  action={handleFormAction}
-                  className="flex items-center gap-2 md:gap-4"
-                >
-                  <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                    <Paperclip className="h-5 w-5" />
-                    <span className="sr-only">Attach file</span>
-                  </Button>
-                  <input
-                    type="file"
-                    name="attachment"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept="image/*"
-                  />
-                  <Input
-                    name="prompt"
-                    placeholder="Type your message..."
-                    autoComplete="off"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="flex-1 rounded-full px-4"
-                  />
-
-                  <SubmitButton />
-                </form>
-              </div>
-            </footer>
         </main>
-      </div>
+        <footer className="shrink-0 p-2 md:p-4 border-t">
+            <div className="max-w-4xl mx-auto w-full">
+            {attachment && (
+                <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
+                    {attachmentPreview ? (
+                        <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                    ) : (
+                        <Paperclip className="h-6 w-6" />
+                    )}
+                    <span className="text-sm truncate">{attachment.name}</span>
+                    <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+            <form
+                ref={formRef}
+                action={handleFormAction}
+                className="flex items-center gap-2 md:gap-4"
+            >
+                <Button type="button" variant="outline" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                <Paperclip className="h-5 w-5" />
+                <span className="sr-only">Attach file</span>
+                </Button>
+                <input
+                type="file"
+                name="attachment"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+                />
+                <Input
+                name="prompt"
+                placeholder="Type your message..."
+                autoComplete="off"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="flex-1 rounded-full px-4"
+                />
+
+                <SubmitButton />
+            </form>
+            </div>
+        </footer>
     </div>
   );
 }
