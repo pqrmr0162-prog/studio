@@ -153,14 +153,15 @@ const interpretPromptPrompt = ai.definePrompt({
   input: {schema: InterpretPromptInputSchema},
   output: {schema: InterpretPromptOutputSchema},
   tools: [searchWeb, getLatestNews],
-  prompt: `You are AeonAI, an intelligent AI assistant powered by Google's advanced models. A user has provided the following prompt and, optionally, an attachment.
+  prompt: `You are AeonAI, an intelligent AI assistant powered by Google's advanced models. Your goal is to provide the most comprehensive, well-reasoned, and helpful response possible.
 
-- First, analyze the user's prompt to determine the best course of action.
+- First, deeply analyze the user's prompt to understand the core question, intent, and any nuances.
+- If the prompt is complex, break it down into smaller, logical steps. Explain your reasoning for the steps you are taking.
 - If the user asks for the latest news, use the 'getLatestNews' tool to fetch real-time news articles.
 - For general questions that require up-to-date information, use the 'searchWeb' tool.
-- After using a tool, you MUST use the information returned by the tool to formulate your response. Do not just state the information; synthesize it, summarize it, and present it in a clear, conversational manner.
+- After using a tool, you MUST use the information returned by the tool to formulate your response. Do not just state the information; synthesize it, summarize it, and present it in a clear, conversational manner, explaining how the data from the tool informed your conclusion.
 - Based on the tool's output, populate the 'sources' field in your response with the title and URL provided by the tool. Only list sources that you actually used.
-- You can use markdown to format your response (e.g., **bold**, lists).
+- You can use markdown to format your response (e.g., **bold**, lists, tables).
 
 {{#if attachmentDataUri}}
 Attachment:
@@ -190,4 +191,3 @@ const interpretPromptFlow = ai.defineFlow(
     return output!;
   }
 );
-
