@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip, LogOut } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -17,8 +17,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import React from "react";
-import { auth, provider } from "@/lib/firebase";
-import { onAuthStateChanged, signInWithPopup, signOut, User as FirebaseUser } from "firebase/auth";
 
 const initialState = {
   response: null,
@@ -114,7 +112,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     );
 });
 
-const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, formAction, user, handleLogin, handleLogout }) {
+const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, formAction }) {
     const { pending } = useFormStatus();
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -143,22 +141,6 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                     <Plus size={16}/>
                     <span className="hidden md:inline ml-2">New Chat</span>
                 </Button>
-                {user ? (
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                            <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <Button onClick={handleLogout} variant="outline" size="icon">
-                            <LogOut size={20} />
-                            <span className="sr-only">Logout</span>
-                        </Button>
-                    </div>
-                ) : (
-                    <Button onClick={handleLogin} variant="outline" size="sm">
-                        Login
-                    </Button>
-                )}
               </div>
             </header>
             <main className="flex-1 overflow-y-auto">
@@ -243,8 +225,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                            )}
                           {message.sender === 'user' && (
                             <Avatar className="w-8 h-8 border shrink-0">
-                               <AvatarImage src={user?.photoURL || undefined} />
-                              <AvatarFallback><User size={16}/></AvatarFallback>
+                               <AvatarFallback><User size={16}/></AvatarFallback>
                             </Avatar>
                           )}
                         </div>
@@ -339,7 +320,6 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
   
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -348,13 +328,6 @@ export default function Home() {
   const lastSubmittedPrompt = useRef("");
   
   const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -602,33 +575,6 @@ export default function Home() {
     }
   };
 
-  const handleLogin = async () => {
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        console.error("Error signing in with Google: ", error);
-        toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "Could not sign in with Google. Please try again.",
-        });
-    }
-  };
-
-  const handleLogout = async () => {
-      try {
-          await signOut(auth);
-      } catch (error) {
-          console.error("Error signing out: ", error);
-          toast({
-              variant: "destructive",
-              title: "Logout Failed",
-              description: "Could not sign out. Please try again.",
-          });
-      }
-  };
-
-
   const commonProps = {
     fileInputRef,
     handleFileChange,
@@ -643,17 +589,6 @@ export default function Home() {
     formAction,
   };
 
-  if (messages.length === 0 && !user) {
-    return (
-        <div className="flex flex-col items-center justify-center h-screen bg-background">
-            <CrowLogo className="w-24 h-24 text-primary mb-4"/>
-            <h1 className="text-5xl font-bold mb-2">Welcome to AeonAI</h1>
-            <p className="text-xl text-muted-foreground mb-8">Please sign in to continue</p>
-            <Button onClick={handleLogin} size="lg">Sign in with Google</Button>
-        </div>
-    );
-  }
-  
   if (messages.length === 0) {
     return <WelcomeView {...commonProps} />;
   }
@@ -670,9 +605,6 @@ export default function Home() {
         handleEdit={handleEdit}
         handleSuggestionClick={handleSuggestionClick}
         viewportRef={viewportRef}
-        user={user}
-        handleLogin={handleLogin}
-        handleLogout={handleLogout}
     />
   );
 }
