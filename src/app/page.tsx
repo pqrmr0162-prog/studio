@@ -70,7 +70,7 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
             <div className="mt-8">
                 <form
                     ref={welcomeFormRef}
-                    action={handleFormSubmit}
+                    action={formAction}
                     className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
                 >
                     <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
@@ -109,7 +109,7 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
             </div>
         </main>
         <footer className="text-center p-4 text-xs text-muted-foreground">
-            Created by Bissu
+            Developed by Bissu
         </footer>
         </div>
     );
@@ -163,9 +163,18 @@ export default function Home() {
         title: "Error",
         description: state.error,
       });
-       setMessages(prev => prev.slice(0, -1));
+       setMessages(prev => {
+        if (prev.length > 0 && prev[prev.length -1].sender === 'user') {
+            return prev.slice(0, -1);
+        }
+        return prev;
+       });
 
     } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
+        if (!state.response && !state.imageUrl && (!state.sources || state.sources.length === 0)) {
+            return;
+        }
+
        const newAiMessage: Message = { 
         id: Date.now(), 
         sender: 'ai', 
@@ -181,12 +190,10 @@ export default function Home() {
               const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
 
               if (editedMessageIndex !== -1) {
-                  // Remove the old AI response that followed the edited message
                   if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
                     newMessages.splice(editedMessageIndex + 1, 1);
                   }
               }
-               // Add the new AI message after the edited one
               const insertIndex = editedMessageIndex + 1;
               newMessages.splice(insertIndex, 0, newAiMessage);
 
@@ -208,6 +215,36 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, toast]);
 
+
+  useEffect(() => {
+    const submittedForm = (formRef.current?.elements.namedItem('prompt') as HTMLInputElement)?.form;
+    const currentPrompt = submittedForm ? (new FormData(submittedForm)).get('prompt') as string : lastSubmittedPrompt;
+    
+    if (editingMessageId !== null) {
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                newMessages.splice(editedMessageIndex + 1);
+            }
+            return newMessages;
+        });
+    } else if (currentPrompt.trim() || uploadedImage) {
+        const userMessage: Message = {
+            id: Date.now(),
+            sender: 'user',
+            text: currentPrompt,
+            imageUrl: uploadedImagePreview ?? undefined,
+        };
+        setMessages(prev => {
+            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+            return [...newMessages, userMessage];
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.response, state.imageUrl, state.sources, state.error]);
+
   useEffect(() => {
     if (viewportRef.current) {
       viewportRef.current.scrollTo({
@@ -226,33 +263,8 @@ export default function Home() {
   };
   
   const handleFormSubmit = (formData: FormData) => {
-    const currentPrompt = formData.get("prompt") as string;
-    
-    if (editingMessageId !== null) {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-            if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                // Remove messages after the edited one, including their suggestions
-                newMessages.splice(editedMessageIndex + 1);
-            }
-            return newMessages;
-        });
-    } else if (currentPrompt.trim() || uploadedImage) {
-      const userMessage: Message = {
-        id: Date.now(),
-        sender: 'user',
-        text: currentPrompt,
-        imageUrl: uploadedImagePreview ?? undefined,
-      };
-     
-      setMessages(prev => {
-        const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-        return [...newMessages, userMessage];
-      });
-    }
-
+    const promptValue = formData.get("prompt") as string;
+    setLastSubmittedPrompt(promptValue);
     formAction(formData);
   };
   
@@ -291,8 +303,6 @@ export default function Home() {
     setEditingMessageId(message.id);
     setPrompt(message.text);
     if (message.imageUrl) {
-        // Can't re-create the file, so we just show the preview. 
-        // User needs to re-upload if they want to change the image.
         setUploadedImagePreview(message.imageUrl);
     } else {
         handleRemoveImage();
@@ -378,7 +388,7 @@ export default function Home() {
             <CrowLogo className="w-8 h-8"/>
             <div>
               <h1 className="text-lg font-bold leading-none">AeonAI</h1>
-              <p className="text-xs text-muted-foreground">Created by Bissu</p>
+              <p className="text-xs text-muted-foreground">Developed by Bissu</p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -525,7 +535,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={handleFormSubmit}
+                action={formAction}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
@@ -560,5 +570,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
