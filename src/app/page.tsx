@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Paperclip } from "lucide-react";
+import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, Link as LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -49,16 +49,98 @@ function SubmitButton() {
   );
 }
 
-const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit, pending }) => {
+const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
+    const { pending } = useFormStatus();
+    const formRef = useRef<HTMLFormElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = useRef<any>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            const maxHeight = 192; // Corresponds to max-h-48
+            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+        }
+    }, [prompt]);
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         if (formRef.current) {
-          formRef.current.requestSubmit();
+          formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         }
       }
     };
     
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setUploadedImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setUploadedImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleMicClick = () => {
+        if (pending) return;
+        
+        if (isRecording) {
+            recognitionRef.current?.stop();
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            toast({
+                variant: "destructive",
+                title: "Unsupported Browser",
+                description: "Speech recognition is not supported in your browser.",
+            });
+            return;
+        }
+
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-IN';
+
+        recognitionRef.current.onstart = () => {
+            setIsRecording(true);
+            toast({ title: "Listening..." });
+        };
+
+        recognitionRef.current.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            setIsRecording(false);
+            toast({
+                variant: "destructive",
+                title: "Speech Recognition Error",
+                description: event.error,
+            });
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setPrompt(transcript);
+        };
+
+        recognitionRef.current.start();
+    };
+
+
     return (
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -69,7 +151,7 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <form ref={formRef} onSubmit={onSubmit} className="contents">
+                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
                     <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
@@ -115,14 +197,114 @@ const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setP
     );
 };
 
-const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, onSubmit, pending }) => {
+const ChatView = ({ messages, prompt, setPrompt, onFormSubmit, viewportRef }) => {
+    const { pending } = useFormStatus();
+    const formRef = useRef<HTMLFormElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = useRef<any>(null);
+    const { toast } = useToast();
+    const [theme, setTheme] = useState('dark');
+    const { handleCopy, handleEdit, handleSuggestionClick, handleNewChat } = useChatActions({ setPrompt, setMessages, setEditingMessageId });
+
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(storedTheme);
+        document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+        document.documentElement.classList.toggle('light', storedTheme !== 'dark');
+    }, []);
+    
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            const maxHeight = 192; // Corresponds to max-h-48
+            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+        }
+    }, [prompt]);
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
           if (formRef.current) {
-            formRef.current.requestSubmit();
+            formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
           }
       }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setUploadedImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setUploadedImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const toggleTheme = () => {
+        setTheme(prevTheme => {
+            const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            document.documentElement.classList.toggle('dark', newTheme === 'dark');
+            document.documentElement.classList.toggle('light', newTheme !== 'dark');
+            return newTheme;
+        });
+    };
+
+    const handleMicClick = () => {
+        if (pending) return;
+        
+        if (isRecording) {
+            recognitionRef.current?.stop();
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            toast({
+                variant: "destructive",
+                title: "Unsupported Browser",
+                description: "Speech recognition is not supported in your browser.",
+            });
+            return;
+        }
+
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-IN';
+
+        recognitionRef.current.onstart = () => {
+            setIsRecording(true);
+            toast({ title: "Listening..." });
+        };
+
+        recognitionRef.current.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            setIsRecording(false);
+            toast({
+                variant: "destructive",
+                title: "Speech Recognition Error",
+                description: event.error,
+            });
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setPrompt(transcript);
+        };
+
+        recognitionRef.current.start();
     };
     
     return (
@@ -140,7 +322,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                     {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
                     <span className="sr-only">Toggle theme</span>
                 </Button>
-                <Button onClick={handleNewChat} variant="outline" size="sm">
+                <Button onClick={() => handleNewChat(handleRemoveImage)} variant="outline" size="sm">
                     <Plus size={16}/>
                     <span className="hidden md:inline ml-2">New Chat</span>
                 </Button>
@@ -187,7 +369,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                           )}
                            {message.sender === 'user' && message.text && (
                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message, handleRemoveImage)}>
                                     <Pencil size={16}/>
                                 </Button>
                             </div>
@@ -268,7 +450,7 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <form ref={formRef} onSubmit={onSubmit} className="contents">
+                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
                     <div className="max-w-4xl mx-auto w-full">
                     {uploadedImagePreview && (
                         <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -312,28 +494,61 @@ const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, ha
 };
 
 
+function useChatActions({ setPrompt, setMessages, setEditingMessageId }) {
+    const { toast } = useToast();
+    const { pending } = useFormStatus();
+
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Copied!",
+            description: "The message has been copied to your clipboard.",
+        });
+    };
+
+    const handleEdit = (message: Message, handleRemoveImage: () => void) => {
+        if (pending) return;
+        setEditingMessageId(message.id);
+        setPrompt(message.text);
+        if (message.imageUrl) {
+            // This is a simplification. In a real app, you'd need to handle the file object.
+            // For now, we just indicate that an image was there, but can't re-upload it.
+            toast({ title: "Note", description: "Editing a message with an image is not fully supported. Please re-attach the image if needed."});
+            handleRemoveImage();
+        } else {
+            handleRemoveImage();
+        }
+    };
+
+    const handleSuggestionClick = (suggestion: string) => {
+        if (pending) return;
+        setPrompt(suggestion);
+        setTimeout(() => {
+            const form = document.querySelector('form');
+            if (form) {
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }, 100);
+    };
+
+    const handleNewChat = (handleRemoveImage: () => void) => {
+        setMessages([]);
+        handleRemoveImage();
+        setEditingMessageId(null);
+    };
+
+    return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
+}
+
+
 function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
-    const formRef = useRef<HTMLFormElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
-    const recognitionRef = useRef<any>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
-    const [theme, setTheme] = useState('dark');
-    const [isRecording, setIsRecording] = useState(false);
-
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        const initialTheme = storedTheme ? storedTheme : 'dark';
-        setTheme(initialTheme);
-        document.documentElement.classList.add(initialTheme);
-    }, []);
 
     const isFirstResponse = useRef(true);
     useEffect(() => {
@@ -382,15 +597,6 @@ function AppContent({ state, formAction }) {
     }, [state]);
 
     useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            const scrollHeight = textareaRef.current.scrollHeight;
-            const maxHeight = 192; // Corresponds to max-h-48
-            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-        }
-    }, [prompt]);
-
-    useEffect(() => {
         if (viewportRef.current) {
             viewportRef.current.scrollTo({
                 top: viewportRef.current.scrollHeight,
@@ -405,8 +611,9 @@ function AppContent({ state, formAction }) {
 
         const formData = new FormData(event.currentTarget);
         const currentPrompt = formData.get("prompt") as string;
+        const uploadedFile = formData.get("uploadedFile") as File;
         
-        if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
+        if ((!currentPrompt || currentPrompt.trim().length === 0) && (!uploadedFile || uploadedFile.size === 0)) {
             return;
         }
         
@@ -414,7 +621,7 @@ function AppContent({ state, formAction }) {
             id: Date.now(),
             sender: 'user',
             text: currentPrompt,
-            imageUrl: uploadedImagePreview ?? undefined,
+            imageUrl: uploadedFile && uploadedFile.size > 0 ? URL.createObjectURL(uploadedFile) : undefined,
         };
 
         if (editingMessageId !== null) {
@@ -422,7 +629,7 @@ function AppContent({ state, formAction }) {
                 const newMessages = [...prev];
                 const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                 if (editedMessageIndex !== -1) {
-                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: userMessage.imageUrl || newMessages[editedMessageIndex].imageUrl };
                     if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
                         newMessages.splice(editedMessageIndex + 1, 1);
                     }
@@ -436,168 +643,49 @@ function AppContent({ state, formAction }) {
             });
         }
 
-        setPrompt("");
-        setUploadedImagePreview(null);
-        if (formRef.current) {
-            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = "";
-        }
-        
         formAction(formData);
-    };
-
-
-    const handleRemoveImage = () => {
-        setUploadedImagePreview(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-
-    const handleSuggestionClick = (suggestion: string) => {
-        if (pending) return;
-        setPrompt(suggestion);
-        setTimeout(() => {
-            if (formRef.current) {
-                formRef.current.requestSubmit();
-            }
-        }, 100);
-    }
-
-    const handleNewChat = () => {
-        setMessages([]);
-        handleRemoveImage();
-        setEditingMessageId(null);
-    };
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => {
-            const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', newTheme);
-            document.documentElement.classList.remove('light', 'dark');
-            document.documentElement.classList.add(newTheme);
-            return newTheme;
-        });
-    };
-
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: "Copied!",
-            description: "The message has been copied to your clipboard.",
-        });
-    }
-
-    const handleEdit = (message: Message) => {
-        if (pending) return;
-        setEditingMessageId(message.id);
-        setPrompt(message.text);
-        if (message.imageUrl) {
-            setUploadedImagePreview(message.imageUrl);
-        } else {
-            handleRemoveImage();
-        }
-        textareaRef.current?.focus();
-    }
-
-    const handleMicClick = () => {
-        if (pending) return;
         
-        if (isRecording) {
-            recognitionRef.current?.stop();
-            return;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            toast({
-                variant: "destructive",
-                title: "Unsupported Browser",
-                description: "Speech recognition is not supported in your browser.",
-            });
-            return;
-        }
-
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-IN';
-
-        recognitionRef.current.onstart = () => {
-            setIsRecording(true);
-            toast({ title: "Listening..." });
-        };
-
-        recognitionRef.current.onend = () => {
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            setIsRecording(false);
-            toast({
-                variant: "destructive",
-                title: "Speech Recognition Error",
-                description: event.error,
-            });
-        };
-
-        recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setPrompt(transcript);
-        };
-
-        recognitionRef.current.start();
+        setPrompt("");
+        // Reset the file input visually after submission by targeting the form directly.
+        const form = event.currentTarget;
+        const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+        if(fileInput) fileInput.value = "";
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setUploadedImagePreview(URL.createObjectURL(file));
-        }
-    };
-    
-    const commonProps = {
-        fileInputRef,
-        handleFileChange,
-        textareaRef,
-        prompt,
-        setPrompt,
-        isRecording,
-        handleMicClick,
-        uploadedImagePreview,
-        handleRemoveImage,
-        formRef,
-        onSubmit: handleClientSideSubmit,
-        pending
-    };
 
     if (messages.length === 0 && !pending) {
-        return <WelcomeView {...commonProps} />;
+        return <WelcomeView onFormSubmit={handleClientSideSubmit} prompt={prompt} setPrompt={setPrompt} />;
     }
     
     return <ChatView
-        {...commonProps}
         messages={messages}
-        theme={theme}
-        handleNewChat={handleNewChat}
-        toggleTheme={toggleTheme}
-        handleCopy={handleCopy}
-        handleEdit={handleEdit}
-        handleSuggestionClick={handleSuggestionClick}
+        prompt={prompt}
+        setPrompt={setPrompt}
+        onFormSubmit={handleClientSideSubmit}
         viewportRef={viewportRef}
     />
 }
+
+// Wrapper component to provide form status context
+const FormStatusWrapper = ({ children, formAction, state }) => {
+    return (
+        <form action={formAction} className="contents">
+            {React.Children.map(children, child =>
+                React.cloneElement(child, { state, formAction })
+            )}
+        </form>
+    );
+};
+
 
 export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
     return (
-        <AppContent
-            state={state}
-            formAction={formAction}
-        />
+        <FormStatusWrapper formAction={formAction} state={state}>
+            <AppContent />
+        </FormStatusWrapper>
     );
 }
-
 
     
