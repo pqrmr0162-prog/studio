@@ -1,3 +1,4 @@
+
 "use server";
 
 import { interpretPrompt } from "@/ai/flows/interpret-prompt";
@@ -61,7 +62,15 @@ export async function getAiResponse(
     }
   } catch (error) {
     console.error(error);
-    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-    return { response: null, suggestions: null, sources: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
+    let errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+    
+    // Check for quota-related errors and provide a user-friendly message
+    if (errorMessage.includes("Too Many Requests") || /quota/i.test(errorMessage)) {
+        errorMessage = "You have exceeded the API request limit. Please wait a moment and try again.";
+    } else {
+        errorMessage = `AI Error: ${errorMessage}`;
+    }
+
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: errorMessage };
   }
 }
