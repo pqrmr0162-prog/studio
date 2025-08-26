@@ -49,6 +49,7 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
+  const [audioCache, setAudioCache] = useState<Record<number, string>>({});
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +148,17 @@ export default function Home() {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
 
+  const playAudio = (audioDataUri: string, messageId: number) => {
+    const newAudio = new Audio(audioDataUri);
+    audioRef.current = newAudio;
+  
+    newAudio.play();
+    setPlayingAudio(messageId);
+    newAudio.onended = () => {
+      setPlayingAudio(null);
+    };
+  };
+
   const handlePlayAudio = async (message: Message) => {
     if (playingAudio === message.id && audioRef.current) {
         audioRef.current.pause();
@@ -157,6 +169,12 @@ export default function Home() {
     if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause();
         setPlayingAudio(null);
+    }
+    
+    // Check cache first
+    if (audioCache[message.id]) {
+      playAudio(audioCache[message.id], message.id);
+      return;
     }
     
     setLoadingAudio(message.id);
@@ -172,14 +190,8 @@ export default function Home() {
         }
 
         if(result.audioDataUri) {
-            const newAudio = new Audio(result.audioDataUri);
-            audioRef.current = newAudio;
-
-            newAudio.play();
-            setPlayingAudio(message.id);
-            newAudio.onended = () => {
-                setPlayingAudio(null);
-            };
+            setAudioCache(prev => ({...prev, [message.id]: result.audioDataUri!}));
+            playAudio(result.audioDataUri, message.id);
         }
     } catch (error) {
         toast({
