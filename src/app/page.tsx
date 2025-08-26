@@ -151,7 +151,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
+                <div className="contents">
                     <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
@@ -177,7 +177,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                         </Button>
                         <SubmitButton />
                     </div>
-                </form>
+                </div>
                 {uploadedImagePreview && (
                     <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
@@ -208,49 +208,42 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
     const { toast } = useToast();
     const [theme, setTheme] = useState('dark');
 
-    const useChatActions = () => {
-        const handleCopy = (text: string) => {
-            navigator.clipboard.writeText(text);
-            toast({
-                title: "Copied!",
-                description: "The message has been copied to your clipboard.",
-            });
-        };
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Copied!",
+            description: "The message has been copied to your clipboard.",
+        });
+    };
     
-        const handleEdit = (message: Message, handleRemoveImage: () => void) => {
-            if (pending) return;
-            setEditingMessageId(message.id);
-            setPrompt(message.text);
-            if (message.imageUrl) {
-                toast({ title: "Note", description: "Editing a message with an image is not fully supported. Please re-attach the image if needed."});
-                handleRemoveImage();
-            } else {
-                handleRemoveImage();
-            }
-        };
-    
-        const handleSuggestionClick = (suggestion: string) => {
-            if (pending) return;
-            setPrompt(suggestion);
-            setTimeout(() => {
-                // Use a ref to the form to submit, assuming the form has a ref
-                if (formRef.current) {
-                  formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }
-            }, 100);
-        };
-    
-        const handleNewChat = (handleRemoveImage: () => void) => {
-            setMessages([]);
-            setPrompt("");
+    const handleEdit = (message: Message, handleRemoveImage: () => void) => {
+        if (pending) return;
+        setEditingMessageId(message.id);
+        setPrompt(message.text);
+        if (message.imageUrl) {
+            toast({ title: "Note", description: "Editing a message with an image is not fully supported. Please re-attach the image if needed."});
             handleRemoveImage();
-            setEditingMessageId(null);
-        };
+        } else {
+            handleRemoveImage();
+        }
+    };
     
-        return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
-    }
-
-    const { handleCopy, handleEdit, handleSuggestionClick, handleNewChat } = useChatActions();
+    const handleSuggestionClick = (suggestion: string) => {
+        if (pending) return;
+        setPrompt(suggestion);
+        setTimeout(() => {
+            if (formRef.current) {
+              formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }, 100);
+    };
+    
+    const handleNewChat = (handleRemoveImage: () => void) => {
+        setMessages([]);
+        setPrompt("");
+        handleRemoveImage();
+        setEditingMessageId(null);
+    };
 
 
     useEffect(() => {
@@ -494,7 +487,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
+                <div className="contents">
                     <div className="max-w-4xl mx-auto w-full">
                     {uploadedImagePreview && (
                         <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -531,7 +524,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         <SubmitButton />
                     </div>
                     </div>
-                </form>
+                </div>
             </footer>
         </div>
       );
@@ -670,7 +663,21 @@ function AppContent({ state, formAction }) {
 const FormStatusWrapper = ({ children, formAction, state }) => {
     return (
         // The form element has to wrap the component that uses useFormStatus
-        <form action={formAction} className="contents">
+        <form action={formAction} className="contents" onSubmit={(e) => {
+            const form = e.currentTarget;
+            // The AppContent component handles its own client-side submission logic,
+            // so we find its form and trigger its submit event.
+            // This is a bit of a workaround to bridge the server action form
+            // with the client-side handling.
+            const childForm = form.querySelector('form');
+            if(childForm) {
+                // We need to prevent the outer form submission and delegate it
+                // to the inner form's onSubmit handler.
+                e.preventDefault();
+                childForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+            // If there's no child form, let the default action proceed.
+        }}>
             {React.Children.map(children, child =>
                 // Pass state and formAction to the child
                 React.cloneElement(child, { state, formAction })
@@ -684,12 +691,34 @@ export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
     return (
-        <FormStatusWrapper formAction={formAction} state={state}>
-            <AppContent />
-        </FormStatusWrapper>
+        <form action={formAction} className="contents" onSubmit={(e) => {
+            // This setup is a bit complex. The goal is to have a single form action
+            // for the server, but handle the UI updates and submission logic on the client.
+            // The `AppContent` component has its own `handleClientSideSubmit` function.
+            // We're essentially stopping the parent form's default submission and
+            // manually triggering the submission logic within the AppContent component.
+            
+            // By wrapping AppContent, we provide it with the server action `formAction`.
+            // The `handleClientSideSubmit` function inside AppContent will then call
+            // this `formAction` with the form data.
+            const form = e.currentTarget;
+            const appContentElement = form.firstElementChild; // This should be the root of AppContent
+            if (appContentElement) {
+                // We need a way to call `handleClientSideSubmit` from here.
+                // Since we can't directly call it, we'll let the onFormSubmit prop handle it.
+                // The `AppContent` component will render either `WelcomeView` or `ChatView`.
+                // Both of those have a form with an `onSubmit` that points to `handleClientSideSubmit`.
+                // We will simulate a submission on that inner form.
+                const innerForm = appContentElement.querySelector('form');
+                if (innerForm) {
+                    e.preventDefault();
+                    innerForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        }}>
+           <AppContent state={state} formAction={formAction} />
+        </form>
     );
 }
-
-    
 
     
