@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, Link as LinkIcon, Mic, Paperclip } from "lucide-react";
+import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, Link as LinkIcon, Mic, Paperclip, LoaderCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -39,7 +39,11 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
-      <SendHorizonal className="h-5 w-5" />
+       {pending ? (
+        <LoaderCircle className="h-5 w-5 animate-spin" />
+      ) : (
+        <SendHorizonal className="h-5 w-5" />
+      )}
       <span className="sr-only">Send message</span>
     </Button>
   );
@@ -138,33 +142,31 @@ const WelcomeView = React.memo(({ onFormSubmit, setPrompt, prompt }) => {
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
-                    <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
-                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                            <Paperclip className="h-5 w-5" />
-                            <span className="sr-only">Upload file</span>
-                        </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
-        
-                        <Textarea
-                            ref={textareaRef}
-                            name="prompt"
-                            placeholder="Message AeonAI..."
-                            autoComplete="off"
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
-                            rows={1}
-                            disabled={pending}
-                        />
-                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                            <Mic className="h-5 w-5" />
-                            <span className="sr-only">Use microphone</span>
-                        </Button>
-                        <SubmitButton />
-                    </div>
-                </form>
+                <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                        <Paperclip className="h-5 w-5" />
+                        <span className="sr-only">Upload file</span>
+                    </Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
+    
+                    <Textarea
+                        ref={textareaRef}
+                        name="prompt"
+                        placeholder="Message AeonAI..."
+                        autoComplete="off"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
+                        rows={1}
+                        disabled={pending}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+                        <Mic className="h-5 w-5" />
+                        <span className="sr-only">Use microphone</span>
+                    </Button>
+                    <SubmitButton />
+                </div>
                 {uploadedImagePreview && (
                     <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
@@ -466,63 +468,62 @@ const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormS
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm z-10">
-                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
-                    <div className="max-w-4xl mx-auto w-full">
-                    {uploadedImagePreview && (
-                        <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
-                            <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                            <span className="text-sm truncate">Image attached</span>
-                            <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    )}
-                    <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm">
-                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                            <Paperclip className="h-5 w-5" />
-                            <span className="sr-only">Upload file</span>
+                <div className="max-w-4xl mx-auto w-full">
+                {uploadedImagePreview && (
+                    <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
+                        <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                        <span className="text-sm truncate">Image attached</span>
+                        <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage} disabled={pending}>
+                            <X className="h-4 w-4" />
                         </Button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
+                    </div>
+                )}
+                <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm">
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                        <Paperclip className="h-5 w-5" />
+                        <span className="sr-only">Upload file</span>
+                    </Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
 
-                        <Textarea
-                        ref={textareaRef}
-                        name="prompt"
-                        placeholder="Message AeonAI..."
-                        autoComplete="off"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
-                        rows={1}
-                        disabled={pending}
-                        />
-                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
-                            <Mic className="h-5 w-5" />
-                            <span className="sr-only">Use microphone</span>
-                        </Button>
-                        <SubmitButton />
-                    </div>
-                    </div>
-                </form>
+                    <Textarea
+                    ref={textareaRef}
+                    name="prompt"
+                    placeholder="Message AeonAI..."
+                    autoComplete="off"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
+                    rows={1}
+                    disabled={pending}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+                        <Mic className="h-5 w-5" />
+                        <span className="sr-only">Use microphone</span>
+                    </Button>
+                    <SubmitButton />
+                </div>
+                </div>
             </footer>
         </div>
       );
 });
 ChatView.displayName = 'ChatView';
 
+
 function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
-    
+    const isInitialRender = useRef(true);
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
 
-    const isFirstResponse = useRef(true);
     useEffect(() => {
-        if (isFirstResponse.current) {
-            isFirstResponse.current = false;
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
             return;
         }
 
@@ -549,11 +550,13 @@ function AppContent({ state, formAction }) {
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                    const insertIndex = editedMessageIndex + 1;
-                    if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
-                        newMessages[insertIndex] = newAiMessage;
-                    } else {
-                        newMessages.splice(insertIndex, 0, newAiMessage);
+                    if (editedMessageIndex !== -1) {
+                        const insertIndex = editedMessageIndex + 1;
+                        if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                            newMessages[insertIndex] = newAiMessage;
+                        } else {
+                            newMessages.splice(insertIndex, 0, newAiMessage);
+                        }
                     }
                     return newMessages;
                 });
@@ -640,28 +643,39 @@ function AppContent({ state, formAction }) {
     />
 }
 
+// Wrapper component to provide form context
 const FormStatusWrapper = ({ children, formAction, state }) => {
+    const { pending } = useFormStatus();
+    
+    // We need a ref to hold the form element, so we can manually trigger submission.
+    const formRef = useRef<HTMLFormElement>(null);
+
+    // This is the submission handler that will be attached to the <form> element.
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault(); // Prevent default browser submission
+        if (pending) return; // Prevent re-submission while pending
+
+        // Extract the `onFormSubmit` handler from the children's props.
+        const childSubmitHandler = (children as React.ReactElement)?.props?.onFormSubmit;
+        if (childSubmitHandler) {
+            // If a custom handler exists (like in WelcomeView/ChatView), call it.
+            // This handler is responsible for managing its own state and eventually calling `formAction`.
+             childSubmitHandler(event);
+        } else {
+            // Fallback for direct submission, though our structure relies on the custom handler.
+            formAction(new FormData(event.currentTarget));
+        }
+    };
+
     return (
-        // The form element has to wrap the component that uses useFormStatus
-        <form action={formAction} className="contents" onSubmit={(e) => {
-            const form = e.currentTarget;
-            // The AppContent component handles its own client-side submission logic,
-            // so we find its form and trigger its submit event.
-            // This is a bit of a workaround to bridge the server action form
-            // with the client-side handling.
-            const childForm = form.querySelector('form');
-            if(childForm) {
-                // We need to prevent the outer form submission and delegate it
-                // to the inner form's onSubmit handler.
-                e.preventDefault();
-                childForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-            }
-            // If there's no child form, let the default action proceed.
-        }}>
-            {React.Children.map(children, child =>
-                // Pass state and formAction to the child
-                React.cloneElement(child, { state, formAction })
-            )}
+        <form ref={formRef} action={formAction} className="contents" onSubmit={handleSubmit}>
+            {/* Clone the child element (AppContent) and pass down necessary props */}
+            {React.cloneElement(children as React.ReactElement, {
+                state,
+                formAction,
+                onFormSubmit: handleSubmit, // Pass the submit handler down
+                formRef // Pass the form ref down
+            })}
         </form>
     );
 };
