@@ -23,10 +23,10 @@ export async function getAiResponse(
   formData: FormData
 ): Promise<FormState> {
   const prompt = formData.get("prompt") as string;
-  const attachment = formData.get("attachment") as File | null;
+  const cameraImage = formData.get("cameraImage") as File | null;
 
-  if ((!prompt || prompt.trim().length === 0) && !attachment) {
-    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
+  if ((!prompt || prompt.trim().length === 0) && !cameraImage) {
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or capture an image." };
   }
 
   try {
@@ -38,8 +38,8 @@ export async function getAiResponse(
     } else {
       const input: InterpretPromptInput = { prompt };
       
-      if (attachment && attachment.size > 0) {
-          input.attachmentDataUri = await fileToDataUri(attachment);
+      if (cameraImage && cameraImage.size > 0) {
+          input.attachmentDataUri = await fileToDataUri(cameraImage);
       }
 
       const result: InterpretPromptOutput = await interpretPrompt(input);

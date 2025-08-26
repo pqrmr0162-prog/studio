@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -30,7 +32,6 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
   imageUrl?: string;
-  attachmentName?: string;
   suggestions?: string[];
   sources?: { title: string; url: string }[];
 }
@@ -55,15 +56,17 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-  const [attachment, setAttachment] = useState<File | null>(null);
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [cameraImage, setCameraImage] = useState<File | null>(null);
+  const [cameraImagePreview, setCameraImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -79,6 +82,38 @@ export default function Home() {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (showCamera) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({video: true});
+          setHasCameraPermission(true);
+  
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          setShowCamera(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this app.',
+          });
+        }
+      };
+  
+      getCameraPermission();
+    } else {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    }
+  }, [showCamera, toast]);
 
   useEffect(() => {
     if (state.error) {
@@ -134,39 +169,24 @@ export default function Home() {
     }
   }, [messages]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAttachment(file);
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setAttachmentPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setAttachmentPreview(null);
-      }
-    }
-  };
-
-  const handleRemoveAttachment = () => {
-    setAttachment(null);
-    setAttachmentPreview(null);
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
+  const handleRemoveImage = () => {
+    setCameraImage(null);
+    setCameraImagePreview(null);
   };
   
   const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
+    if (cameraImage) {
+        formData.append("cameraImage", cameraImage, "capture.jpg");
+    }
+
     if (editingMessageId !== null) {
         setMessages(prev => {
             const newMessages = [...prev];
             const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
             if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: attachmentPreview || newMessages[editedMessageIndex].imageUrl, attachmentName: attachment?.name };
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: cameraImagePreview || newMessages[editedMessageIndex].imageUrl };
                 // Remove messages after the edited one, including their suggestions
                 newMessages.splice(editedMessageIndex + 1);
             }
@@ -176,20 +196,16 @@ export default function Home() {
         formAction(formData);
         formRef.current?.reset();
         setPrompt("");
-        handleRemoveAttachment();
+        handleRemoveImage();
 
-    } else if (currentPrompt.trim() || attachment) {
+    } else if (currentPrompt.trim() || cameraImage) {
       const userMessage: Message = {
         id: Date.now(),
         sender: 'user',
-        text: currentPrompt
+        text: currentPrompt,
+        imageUrl: cameraImagePreview ?? undefined,
       };
-      if (attachmentPreview) {
-          userMessage.imageUrl = attachmentPreview;
-      }
-      if (attachment && !attachmentPreview) {
-        userMessage.attachmentName = attachment.name;
-      }
+     
       setMessages(prev => {
         const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
         return [...newMessages, userMessage];
@@ -198,7 +214,7 @@ export default function Home() {
       formAction(formData);
       formRef.current?.reset();
       setPrompt("");
-      handleRemoveAttachment();
+      handleRemoveImage();
     }
   };
 
@@ -212,8 +228,9 @@ export default function Home() {
 
   const handleNewChat = () => {
     setMessages([]);
-    handleRemoveAttachment();
+    handleRemoveImage();
     setEditingMessageId(null);
+    setShowCamera(false);
   };
 
   const toggleTheme = () => {
@@ -232,10 +249,10 @@ export default function Home() {
     setEditingMessageId(message.id);
     setPrompt(message.text);
     if (message.imageUrl) {
-        setAttachmentPreview(message.imageUrl);
-        // Note: we can't re-create the File object, so user would need to re-attach if they want to change it.
+        setCameraImagePreview(message.imageUrl);
+        // Note: we can't re-create the File object, so user would need to re-capture if they want to change it.
     } else {
-        handleRemoveAttachment();
+        handleRemoveImage();
     }
   }
 
@@ -287,6 +304,52 @@ export default function Home() {
     recognitionRef.current.start();
   };
 
+  const handleCapture = () => {
+    if (videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+        canvas.toBlob(blob => {
+            if (blob) {
+                setCameraImage(new File([blob], "capture.jpg", { type: "image/jpeg" }));
+                setCameraImagePreview(URL.createObjectURL(blob));
+            }
+        }, 'image/jpeg');
+        setShowCamera(false);
+    }
+  }
+
+  const CameraView = () => (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl relative">
+            <CardContent className="p-2 md:p-4">
+                <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted playsInline />
+                {hasCameraPermission === false && (
+                    <Alert variant="destructive" className="mt-2">
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                        Please allow camera access to use this feature.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                     <Button variant="outline" size="icon" className="rounded-full h-16 w-16" onClick={handleCapture} disabled={hasCameraPermission !== true}>
+                        <Camera className="h-8 w-8" />
+                    </Button>
+                </div>
+                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={() => setShowCamera(false)}>
+                    <X className="h-5 w-5" />
+                </Button>
+            </CardContent>
+        </Card>
+    </div>
+  );
+
+  if (showCamera) {
+    return <CameraView />;
+  }
+
   if (messages.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -301,18 +364,10 @@ export default function Home() {
                   action={handleFormSubmit}
                   className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
               >
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                      <Paperclip className="h-5 w-5" />
-                      <span className="sr-only">Attach file</span>
+                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
+                      <Camera className="h-5 w-5" />
+                      <span className="sr-only">Use camera</span>
                   </Button>
-                  <input
-                  type="file"
-                  name="attachment"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept="image/*,application/pdf,text/plain,.doc,.docx"
-                  />
                   <Input
                   name="prompt"
                   placeholder="Message AeonAI..."
@@ -327,15 +382,11 @@ export default function Home() {
                   </Button>
                   <SubmitButton />
               </form>
-              {attachment && (
+              {cameraImagePreview && (
                   <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
-                      {attachmentPreview ? (
-                          <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                      ) : (
-                          <Paperclip className="h-6 w-6" />
-                      )}
-                      <span className="text-sm truncate">{attachment.name}</span>
-                      <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
+                      <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                      <span className="text-sm truncate">Image captured</span>
+                      <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
                           <X className="h-4 w-4" />
                       </Button>
                   </div>
@@ -432,12 +483,7 @@ export default function Home() {
                               className="rounded-lg mb-2 max-w-full h-auto"
                           />
                         )}
-                        {message.attachmentName && (
-                            <div className="flex items-center gap-2 p-2 bg-background/20 rounded-md mb-2">
-                                <Paperclip className="h-5 w-5" />
-                                <span className="text-sm font-medium truncate">{message.attachmentName}</span>
-                            </div>
-                        )}
+                        
                         {message.text && (
                           message.sender === 'ai' ? (
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -497,15 +543,11 @@ export default function Home() {
         </main>
         <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
             <div className="max-w-4xl mx-auto w-full">
-            {attachment && (
+            {cameraImagePreview && (
                 <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
-                    {attachmentPreview ? (
-                        <Image src={attachmentPreview} alt="Preview" width={40} height={40} className="rounded-md" />
-                    ) : (
-                        <Paperclip className="h-6 w-6" />
-                    )}
-                    <span className="text-sm truncate">{attachment.name}</span>
-                    <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveAttachment}>
+                    <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
+                    <span className="text-sm truncate">Image captured</span>
+                    <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
@@ -515,18 +557,11 @@ export default function Home() {
                 action={handleFormSubmit}
                 className="flex items-center gap-2 md:gap-4 px-2 py-1.5 rounded-full bg-card border shadow-sm"
             >
-                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                    <Paperclip className="h-5 w-5" />
-                    <span className="sr-only">Attach file</span>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
+                    <Camera className="h-5 w-5" />
+                    <span className="sr-only">Use camera</span>
                 </Button>
-                <input
-                type="file"
-                name="attachment"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*,application/pdf,text/plain,.doc,.docx"
-                />
+                
                 <Input
                 name="prompt"
                 placeholder={editingMessageId ? "Edit your message..." : "Type your message..."}
