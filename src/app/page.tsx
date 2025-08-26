@@ -62,9 +62,9 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
-                <div className="flex items-center justify-center gap-4 mb-4">
-                <CrowLogo className="w-12 h-12 text-primary"/>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <CrowLogo className="w-8 h-8"/>
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
@@ -310,8 +310,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
 export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(getAiResponse, initialState);
-  const { pending } = useFormStatus();
-
+  
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -326,7 +325,7 @@ export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedPrompt = useRef("");
-  
+  const { pending } = useFormStatus();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -372,14 +371,13 @@ export default function Home() {
                     return newMessages;
                 });
                 setEditingMessageId(null);
-                handleRemoveImage();
             } else {
                 setMessages((prev) => [...prev, newAiMessage]);
             }
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending, state]);
+  }, [state, pending]);
 
 
   useEffect(() => {
@@ -416,7 +414,6 @@ export default function Home() {
                 }
                 return newMessages;
             });
-            handleRemoveImage();
         } else {
             setMessages(prev => {
                 const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
@@ -425,12 +422,9 @@ export default function Home() {
         }
 
         setPrompt("");
-        if (!editingMessageId) {
-            handleRemoveImage();
-        }
+        handleRemoveImage();
     };
     
-    // This effect runs when `formAction` is called
     form.addEventListener('submit', handleClientSideSubmit);
     return () => {
         form.removeEventListener('submit', handleClientSideSubmit);
@@ -608,5 +602,3 @@ export default function Home() {
     />
   );
 }
-
-    
