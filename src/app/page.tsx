@@ -52,8 +52,11 @@ const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChan
   <div className="flex flex-col h-screen bg-background">
      <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
        <div className="w-full max-w-2xl">
-         <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
-         <h1 className="text-2xl md:text-3xl font-bold">How can I help you today?</h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <CrowLogo className="w-16 h-16 md:w-20 md:h-20 text-primary"/>
+            <h1 className="text-4xl md:text-5xl font-bold">AeonAI</h1>
+          </div>
+         <h2 className="text-2xl md:text-3xl font-bold">How can I help you today?</h2>
          <div className="mt-8">
            <form
                ref={formRef}
@@ -555,5 +558,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
