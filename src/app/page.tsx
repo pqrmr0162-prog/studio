@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Camera } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, X, Sun, Moon, Copy, Pencil, LinkIcon, Mic, Camera, MessageCircle, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -35,6 +35,8 @@ interface Message {
   suggestions?: string[];
   sources?: { title: string; url: string }[];
 }
+
+type Mode = "chat" | "image";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -62,6 +64,7 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [mode, setMode] = useState<Mode>("chat");
 
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -177,6 +180,8 @@ export default function Home() {
   const handleFormSubmit = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
     
+    formData.append("mode", mode);
+
     if (cameraImage) {
         formData.append("cameraImage", cameraImage, "capture.jpg");
     }
@@ -203,7 +208,7 @@ export default function Home() {
         id: Date.now(),
         sender: 'user',
         text: currentPrompt,
-        imageUrl: cameraImagePreview ?? undefined,
+        imageUrl: mode === 'image' ? undefined : cameraImagePreview ?? undefined,
       };
      
       setMessages(prev => {
@@ -248,6 +253,7 @@ export default function Home() {
   const handleEdit = (message: Message) => {
     setEditingMessageId(message.id);
     setPrompt(message.text);
+    setMode("chat");
     if (message.imageUrl) {
         setCameraImagePreview(message.imageUrl);
         // Note: we can't re-create the File object, so user would need to re-capture if they want to change it.
@@ -350,39 +356,50 @@ export default function Home() {
     return <CameraView />;
   }
 
-  if (messages.length === 0) {
-    return (
-      <div className="flex flex-col h-screen bg-background">
+  const WelcomeScreen = () => (
+     <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
           <div className="w-full max-w-2xl">
             <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
             <h1 className="text-2xl md:text-3xl font-bold">Hi, I'm AeonAI</h1>
             <p className="text-muted-foreground mt-2">How can I help you today?</p>
             <div className="mt-8">
+              <div className="flex justify-center gap-2 mb-4">
+                <Button variant={mode === 'chat' ? 'secondary' : 'ghost'} onClick={() => setMode('chat')}>
+                  <MessageCircle className="mr-2" /> Chat
+                </Button>
+                <Button variant={mode === 'image' ? 'secondary' : 'ghost'} onClick={() => setMode('image')}>
+                  <ImageIcon className="mr-2" /> Image
+                </Button>
+              </div>
               <form
                   ref={formRef}
                   action={handleFormSubmit}
                   className="flex items-center gap-2 md:gap-4 px-2 py-1 rounded-full bg-card border shadow-sm"
               >
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
-                      <Camera className="h-5 w-5" />
-                      <span className="sr-only">Use camera</span>
-                  </Button>
+                  {mode === 'chat' && (
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
+                        <Camera className="h-5 w-5" />
+                        <span className="sr-only">Use camera</span>
+                    </Button>
+                  )}
                   <Input
-                  name="prompt"
-                  placeholder="Message AeonAI..."
-                  autoComplete="off"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
+                    name="prompt"
+                    placeholder={mode === 'chat' ? "Message AeonAI..." : "Describe an image to generate..."}
+                    autoComplete="off"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2"
                   />
-                  <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
-                      <Mic className="h-5 w-5" />
-                      <span className="sr-only">Use microphone</span>
-                  </Button>
+                   {mode === 'chat' && (
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                        <Mic className="h-5 w-5" />
+                        <span className="sr-only">Use microphone</span>
+                    </Button>
+                   )}
                   <SubmitButton />
               </form>
-              {cameraImagePreview && (
+              {cameraImagePreview && mode === 'chat' && (
                   <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                       <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
                       <span className="text-sm truncate">Image captured</span>
@@ -398,7 +415,11 @@ export default function Home() {
           by Bissu
         </footer>
       </div>
-    );
+  );
+
+
+  if (messages.length === 0) {
+    return <WelcomeScreen />;
   }
 
   return (
@@ -425,6 +446,7 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
               <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6 pb-24 md:pb-28">
+                {messages.length === 0 && <WelcomeScreen />}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -461,7 +483,7 @@ export default function Home() {
                           </AvatarFallback>
                         </Avatar>
                       )}
-                       {message.sender === 'user' && (
+                       {message.sender === 'user' && message.text && (
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message)}>
                                 <Pencil size={16}/>
@@ -471,17 +493,18 @@ export default function Home() {
                       <div
                         className={cn(
                           "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
-                          message.sender === 'user' ? "user-message" : "ai-message"
+                           message.sender === 'user' ? "user-message" : "ai-message"
                         )}
                       >
                         {message.imageUrl && (
-                          <Image
-                              src={message.imageUrl}
-                              alt="User upload"
-                              width={300}
-                              height={300}
-                              className="rounded-lg mb-2 max-w-full h-auto"
-                          />
+                          <div className="relative aspect-square">
+                            <Image
+                                src={message.imageUrl}
+                                alt={message.text || "Generated or uploaded image"}
+                                fill
+                                className="rounded-lg object-cover"
+                            />
+                          </div>
                         )}
                         
                         {message.text && (
@@ -494,7 +517,7 @@ export default function Home() {
                           )
                         )}
                       </div>
-                      {message.sender === 'ai' && (
+                      {message.sender === 'ai' && message.text && (
                           <div className="flex items-center gap-2">
                               <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(message.text)}>
                                   <Copy size={16}/>
@@ -543,7 +566,15 @@ export default function Home() {
         </main>
         <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
             <div className="max-w-4xl mx-auto w-full">
-            {cameraImagePreview && (
+            <div className="flex justify-center gap-2 mb-2">
+              <Button variant={mode === 'chat' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('chat')}>
+                <MessageCircle className="mr-2" /> Chat
+              </Button>
+              <Button variant={mode === 'image' ? 'secondary' : 'ghost'} size="sm" onClick={() => setMode('image')}>
+                <ImageIcon className="mr-2" /> Image
+              </Button>
+            </div>
+            {cameraImagePreview && mode === 'chat' && (
                 <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
                     <Image src={cameraImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
                     <span className="text-sm truncate">Image captured</span>
@@ -557,24 +588,33 @@ export default function Home() {
                 action={handleFormSubmit}
                 className="flex items-center gap-2 md:gap-4 px-2 py-1.5 rounded-full bg-card border shadow-sm"
             >
-                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
-                    <Camera className="h-5 w-5" />
-                    <span className="sr-only">Use camera</span>
-                </Button>
+                 {mode === 'chat' && (
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => setShowCamera(true)}>
+                        <Camera className="h-5 w-5" />
+                        <span className="sr-only">Use camera</span>
+                    </Button>
+                 )}
                 
                 <Input
-                name="prompt"
-                placeholder={editingMessageId ? "Edit your message..." : "Type your message..."}
-                autoComplete="off"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-2"
+                  name="prompt"
+                  placeholder={
+                      editingMessageId 
+                          ? "Edit your message..." 
+                          : mode === 'chat' 
+                              ? "Message AeonAI..." 
+                              : "Describe an image to generate..."
+                  }
+                  autoComplete="off"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 h-auto py-2"
                 />
-                 <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
-                      <Mic className="h-5 w-5" />
-                      <span className="sr-only">Use microphone</span>
-                  </Button>
-
+                 {mode === 'chat' && (
+                    <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick}>
+                        <Mic className="h-5 w-5" />
+                        <span className="sr-only">Use microphone</span>
+                    </Button>
+                 )}
                 <SubmitButton />
             </form>
             </div>

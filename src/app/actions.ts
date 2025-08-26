@@ -20,19 +20,20 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 export async function getAiResponse(
+  prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const prompt = formData.get("prompt") as string;
   const cameraImage = formData.get("cameraImage") as File | null;
+  const mode = formData.get("mode") as "chat" | "image";
 
   if ((!prompt || prompt.trim().length === 0) && !cameraImage) {
     return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or capture an image." };
   }
 
   try {
-    if (prompt.toLowerCase().startsWith("generate image") || prompt.toLowerCase().startsWith("create an image")) {
-      const imagePrompt = prompt.replace(/^(generate image of|create an image of|generate image|create an image)/i, '').trim();
-      const input: GenerateImageInput = { prompt: imagePrompt };
+    if (mode === "image") {
+      const input: GenerateImageInput = { prompt: prompt };
       const result = await generateImage(input);
       return { response: null, suggestions: null, sources: null, imageUrl: result.imageUrl, error: null };
     } else {
