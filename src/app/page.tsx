@@ -22,7 +22,6 @@ const initialState = {
   suggestions: null,
   sources: null,
   imageUrl: null,
-  audioUrl: null,
   error: null,
 };
 
@@ -33,7 +32,6 @@ interface Message {
   imageUrl?: string;
   suggestions?: string[];
   sources?: { title: string; url: string }[];
-  audioUrl?: string;
 }
 
 function SubmitButton() {
@@ -115,14 +113,12 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
-  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -162,7 +158,6 @@ export default function Home() {
         imageUrl: state.imageUrl || undefined,
         suggestions: state.suggestions || undefined,
         sources: state.sources || undefined,
-        audioUrl: state.audioUrl || undefined,
       };
 
       if (editingMessageId !== null) {
@@ -188,13 +183,6 @@ export default function Home() {
           ...prev,
           newAiMessage,
         ]);
-      }
-
-      if (state.audioUrl) {
-        if (audioRef.current) {
-          audioRef.current.src = state.audioUrl;
-          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
-        }
       }
       
       formRef.current?.reset();
@@ -370,7 +358,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-        <audio ref={audioRef} className="hidden" />
         <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 z-10">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>

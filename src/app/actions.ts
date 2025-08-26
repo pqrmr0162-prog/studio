@@ -4,8 +4,6 @@ import { interpretPrompt } from "@/ai/flows/interpret-prompt";
 import type { InterpretPromptInput, InterpretPromptOutput } from "@/ai/flows/interpret-prompt";
 import { generateImage } from "@/ai/flows/generate-image";
 import type { GenerateImageInput } from "@/ai/flows/generate-image";
-import { generateAudio } from "@/ai/flows/generate-audio";
-import type { GenerateAudioInput, GenerateAudioOutput } from "@/ai/flows/generate-audio";
 
 
 interface FormState {
@@ -13,7 +11,6 @@ interface FormState {
   suggestions: string[] | null;
   sources: { title: string; url: string }[] | null;
   imageUrl: string | null;
-  audioUrl: string | null;
   error: string | null;
 }
 
@@ -33,18 +30,18 @@ export async function getAiResponse(
   const isImageGeneration = prompt.toLowerCase().startsWith('generate image') || prompt.toLowerCase().startsWith('create image');
 
   if ((!prompt || prompt.trim().length === 0) && !uploadedFile) {
-    return { response: null, suggestions: null, sources: null, imageUrl: null, audioUrl: null, error: "Please enter a prompt or upload a file." };
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please enter a prompt or upload a file." };
   }
 
   try {
     if (isImageGeneration) {
       const imagePrompt = prompt.replace(/^(generate image|create image)/i, '').trim();
       if (!imagePrompt) {
-        return { response: null, suggestions: null, sources: null, imageUrl: null, audioUrl: null, error: "Please provide a description for the image you want to generate." };
+        return { response: null, suggestions: null, sources: null, imageUrl: null, error: "Please provide a description for the image you want to generate." };
       }
       const input: GenerateImageInput = { prompt: imagePrompt };
       const result = await generateImage(input);
-      return { response: null, suggestions: null, sources: null, imageUrl: result.imageUrl, audioUrl: null, error: null };
+      return { response: null, suggestions: null, sources: null, imageUrl: result.imageUrl, error: null };
     } else {
       const input: InterpretPromptInput = { prompt };
       
@@ -54,23 +51,17 @@ export async function getAiResponse(
 
       const result: InterpretPromptOutput = await interpretPrompt(input);
       
-      let audioResult: GenerateAudioOutput | null = null;
-      if(result.response) {
-        audioResult = await generateAudio(result.response);
-      }
-
       return { 
         response: result.response, 
         suggestions: result.suggestions ?? null, 
         sources: result.sources ?? null,
         imageUrl: null,
-        audioUrl: audioResult?.audioUrl ?? null,
         error: null 
       };
     }
   } catch (error) {
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-    return { response: null, suggestions: null, sources: null, imageUrl: null, audioUrl: null, error: `AI Error: ${errorMessage}` };
+    return { response: null, suggestions: null, sources: null, imageUrl: null, error: `AI Error: ${errorMessage}` };
   }
 }
