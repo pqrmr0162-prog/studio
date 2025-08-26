@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Copy, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -47,6 +47,7 @@ export default function Home() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
@@ -78,16 +79,44 @@ export default function Home() {
         description: state.error,
       });
     } else if (state.response || state.imageUrl) {
-      setMessages((prev) => [
-        ...prev,
-        { 
-          id: Date.now(), 
-          sender: 'ai', 
-          text: state.response || "",
-          imageUrl: state.imageUrl || undefined
-        },
-      ]);
+      // If we were editing, update the last user message and the new AI response
+      if (editingMessageId !== null) {
+          setMessages(prev => {
+              const newMessages = [...prev];
+              // The last message should be the user's edited message, update it.
+              // The message before that is the AI's old response, which we remove.
+              // Then add the new AI response.
+              const lastUserMessageIndex = newMessages.length -1;
+              
+              const newAiMessage: Message = { 
+                id: Date.now(), 
+                sender: 'ai', 
+                text: state.response || "",
+                imageUrl: state.imageUrl || undefined
+              };
+
+              // We find the message that was being edited.
+              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+              if (editedMessageIndex !== -1) {
+                  // remove all messages after the one being edited.
+                  newMessages.splice(editedMessageIndex + 1);
+              }
+              return [...newMessages, newAiMessage];
+          });
+          setEditingMessageId(null);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { 
+            id: Date.now(), 
+            sender: 'ai', 
+            text: state.response || "",
+            imageUrl: state.imageUrl || undefined
+          },
+        ]);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, toast]);
 
   useEffect(() => {
@@ -125,7 +154,17 @@ export default function Home() {
   
   const handleFormAction = (formData: FormData) => {
     const currentPrompt = formData.get("prompt") as string;
-    if (currentPrompt.trim() || attachment) {
+    
+    if (editingMessageId !== null) {
+        setMessages(prev => prev.map(m => 
+            m.id === editingMessageId ? { ...m, text: currentPrompt, imageUrl: attachmentPreview || m.imageUrl } : m
+        ));
+        formAction(formData);
+        formRef.current?.reset();
+        setPrompt("");
+        handleRemoveAttachment();
+
+    } else if (currentPrompt.trim() || attachment) {
       const userMessage: Message = {
         id: Date.now(),
         sender: 'user',
@@ -146,11 +185,31 @@ export default function Home() {
   const handleNewChat = () => {
     setMessages([]);
     handleRemoveAttachment();
+    setEditingMessageId(null);
   };
 
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "The message has been copied to your clipboard.",
+    });
+  }
+
+  const handleEdit = (message: Message) => {
+    setEditingMessageId(message.id);
+    setPrompt(message.text);
+    if (message.imageUrl) {
+        setAttachmentPreview(message.imageUrl);
+        // Note: we can't re-create the File object, so user would need to re-attach if they want to change it.
+    } else {
+        handleRemoveAttachment();
+    }
+  }
 
   if (messages.length === 0) {
     return (
@@ -240,7 +299,7 @@ export default function Home() {
                   <div
                     key={message.id}
                     className={cn(
-                      "flex items-start gap-2 md:gap-4",
+                      "group flex items-start gap-2 md:gap-4",
                       message.sender === 'user' && "justify-end"
                     )}
                   >
@@ -251,6 +310,13 @@ export default function Home() {
                         </AvatarFallback>
                       </Avatar>
                     )}
+                     {message.sender === 'user' && (
+                      <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEdit(message)}>
+                              <Pencil size={16}/>
+                          </Button>
+                      </div>
+                     )}
                     <div
                       className={cn(
                         "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
@@ -276,6 +342,13 @@ export default function Home() {
                         )
                       )}
                     </div>
+                    {message.sender === 'ai' && (
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(message.text)}>
+                                <Copy size={16}/>
+                            </Button>
+                        </div>
+                     )}
                     {message.sender === 'user' && (
                       <Avatar className="w-8 h-8 border shrink-0">
                         <AvatarFallback><User size={16}/></AvatarFallback>
@@ -334,7 +407,7 @@ export default function Home() {
                 />
                 <Input
                 name="prompt"
-                placeholder="Type your message..."
+                placeholder={editingMessageId ? "Edit your message..." : "Type your message..."}
                 autoComplete="off"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -348,5 +421,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
