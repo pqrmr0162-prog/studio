@@ -53,7 +53,7 @@ const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChan
      <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
        <div className="w-full max-w-2xl">
          <CrowLogo className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 text-primary"/>
-         <h1 className="text-2xl md:text-3xl font-bold">I'm Aeon. How can I help you today?</h1>
+         <h1 className="text-2xl md:text-3xl font-bold">How can I help you today?</h1>
          <div className="mt-8">
            <form
                ref={formRef}
