@@ -47,8 +47,8 @@ export default function Home() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
-  const [playingAudio, setPlayingAudio] = useState<number | null>(null);
-  const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<number | null>(null);
   const [audioCache, setAudioCache] = useState<Record<number, string>>({});
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -149,58 +149,75 @@ export default function Home() {
   };
 
   const playAudio = (audioDataUri: string, messageId: number) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
     const newAudio = new Audio(audioDataUri);
     audioRef.current = newAudio;
-  
+
     newAudio.play();
-    setPlayingAudio(messageId);
+    setPlayingAudioId(messageId);
     newAudio.onended = () => {
-      setPlayingAudio(null);
+      setPlayingAudioId(null);
+      audioRef.current = null;
+    };
+    newAudio.onerror = () => {
+      setPlayingAudioId(null);
+      setLoadingAudioId(null);
+      toast({
+        variant: "destructive",
+        title: "Audio Error",
+        description: "Could not play the audio file.",
+      });
     };
   };
 
   const handlePlayAudio = async (message: Message) => {
-    if (playingAudio === message.id && audioRef.current) {
-        audioRef.current.pause();
-        setPlayingAudio(null);
-        return;
+    // If clicking the currently playing message, pause it.
+    if (playingAudioId === message.id && audioRef.current) {
+      audioRef.current.pause();
+      setPlayingAudioId(null);
+      return;
     }
 
+    // If another audio is playing, stop it.
     if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        setPlayingAudio(null);
+      audioRef.current.pause();
+      setPlayingAudioId(null);
     }
-    
+
     // Check cache first
     if (audioCache[message.id]) {
       playAudio(audioCache[message.id], message.id);
       return;
     }
-    
-    setLoadingAudio(message.id);
-    try {
-        const result = await textToSpeechAction({text: message.text});
-        if (result.error) {
-            toast({
-                variant: "destructive",
-                title: "Audio Error",
-                description: result.error,
-            });
-            return;
-        }
 
-        if(result.audioDataUri) {
-            setAudioCache(prev => ({...prev, [message.id]: result.audioDataUri!}));
-            playAudio(result.audioDataUri, message.id);
-        }
-    } catch (error) {
+    // Not in cache, so fetch it.
+    setLoadingAudioId(message.id);
+    try {
+      const result = await textToSpeechAction({ text: message.text });
+      if (result.error) {
         toast({
-            variant: "destructive",
-            title: "Audio Error",
-            description: "Failed to play audio.",
+          variant: "destructive",
+          title: "Audio Error",
+          description: result.error,
         });
+        return;
+      }
+
+      if (result.audioDataUri) {
+        setAudioCache(prev => ({ ...prev, [message.id]: result.audioDataUri! }));
+        playAudio(result.audioDataUri, message.id);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Audio Error",
+        description: "Failed to generate audio.",
+      });
     } finally {
-        setLoadingAudio(null);
+      setLoadingAudioId(null);
     }
   };
   
@@ -271,9 +288,9 @@ export default function Home() {
                                 variant="ghost"
                                 className="h-6 w-6 text-muted-foreground hover:text-foreground"
                                 onClick={() => handlePlayAudio(message)}
-                                disabled={loadingAudio === message.id}
+                                disabled={loadingAudioId === message.id}
                             >
-                                {loadingAudio === message.id ? (
+                                {loadingAudioId === message.id ? (
                                     <Loader className="h-4 w-4 animate-spin" />
                                 ) : (
                                     <Volume2 className="h-4 w-4" />
