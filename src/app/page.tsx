@@ -38,18 +38,14 @@ interface Message {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full self-end">
-      {pending ? (
-        <div className="w-5 h-5 border-2 border-background border-t-primary rounded-full animate-spin"></div>
-      ) : (
-        <SendHorizonal className="h-5 w-5" />
-      )}
+    <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
+      <SendHorizonal className="h-5 w-5" />
       <span className="sr-only">Send message</span>
     </Button>
   );
 }
 
-const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
+const WelcomeView = React.memo(({ onFormSubmit, setPrompt, prompt }) => {
     const { pending } = useFormStatus();
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -58,15 +54,6 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
     const [isRecording, setIsRecording] = useState(false);
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
-
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            const scrollHeight = textareaRef.current.scrollHeight;
-            const maxHeight = 192; // Corresponds to max-h-48
-            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-        }
-    }, [prompt]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
@@ -151,8 +138,8 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
             <div className="mt-8 w-full">
-                <div className="contents">
-                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
+                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
+                    <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
                             <span className="sr-only">Upload file</span>
@@ -167,7 +154,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                             rows={1}
                             disabled={pending}
                         />
@@ -177,7 +164,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                         </Button>
                         <SubmitButton />
                     </div>
-                </div>
+                </form>
                 {uploadedImagePreview && (
                     <div className="relative mt-2 mx-auto max-w-xs p-2 bg-muted rounded-lg flex items-center gap-2">
                         <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
@@ -195,9 +182,10 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
         </footer>
         </div>
     );
-};
+});
+WelcomeView.displayName = 'WelcomeView';
 
-const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId }) => {
+const ChatView = React.memo(({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId }) => {
     const { pending } = useFormStatus();
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -253,15 +241,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         document.documentElement.classList.toggle('light', storedTheme !== 'dark');
     }, []);
     
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            const scrollHeight = textareaRef.current.scrollHeight;
-            const maxHeight = 192; // Corresponds to max-h-48
-            textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-        }
-    }, [prompt]);
-
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
@@ -346,7 +325,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
     
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 sm:p-4 border-b">
+            <header className="flex items-center shrink-0 gap-4 p-4 border-b">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -359,7 +338,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                     {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
                     <span className="sr-only">Toggle theme</span>
                 </Button>
-                <Button onClick={() => handleNewChat(handleRemoveImage)} variant="outline" size="sm">
+                <Button onClick={() => handleNewChat(handleRemoveImage)} variant="outline">
                     <Plus size={16}/>
                     <span className="hidden md:inline ml-2">New Chat</span>
                 </Button>
@@ -367,7 +346,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             </header>
             <main className="flex-1 overflow-y-auto">
                 <ScrollArea className="h-full" viewportRef={viewportRef}>
-                  <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 sm:p-4 md:p-6 pb-24 md:pb-28">
+                  <div className="space-y-6 max-w-4xl mx-auto w-full p-6 pb-24">
                     {messages.map((message) => (
                       <div
                         key={message.id}
@@ -377,7 +356,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         )}
                       >
                          {message.sender === 'ai' && message.sources && message.sources.length > 0 && (
-                          <div className="flex flex-col items-start gap-2 mb-2 ml-10 md:ml-12">
+                          <div className="flex flex-col items-start gap-2 mb-2 ml-12">
                               <h3 className="text-sm font-semibold flex items-center gap-2">
                                   <LinkIcon size={14} />
                                   Sources
@@ -394,7 +373,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                           </div>
                         )}
                         <div className={cn(
-                          "group flex items-start gap-2 md:gap-4 w-full",
+                          "group flex items-start gap-4 w-full",
                           message.sender === 'user' && "justify-end"
                         )}>
                           {message.sender === 'ai' && (
@@ -413,7 +392,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                            )}
                           <div
                             className={cn(
-                              "max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm prose dark:prose-invert prose-p:my-0",
+                              "max-w-[85%] rounded-2xl px-4 py-3 text-sm prose dark:prose-invert prose-p:my-0",
                                message.sender === 'user' ? "user-message" : "ai-message"
                             )}
                           >
@@ -452,7 +431,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                           )}
                         </div>
                         {message.sender === 'ai' && message.suggestions && (
-                          <div className="flex flex-wrap gap-2 mt-2 ml-10 md:ml-12">
+                          <div className="flex flex-wrap gap-2 mt-2 ml-12">
                             {message.suggestions.map((suggestion, index) => (
                               <Button
                                 key={index}
@@ -470,13 +449,13 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                       </div>
                     ))}
                     {pending && (
-                      <div className="flex items-start gap-2 md:gap-4">
+                      <div className="flex items-start gap-4">
                           <Avatar className="w-8 h-8 border shrink-0">
                              <AvatarFallback>
-                                <CrowLogo className="w-5 h-5 text-primary animate-pulse" />
+                                <CrowLogo className="w-5 h-5 text-muted-foreground" />
                              </AvatarFallback>
                           </Avatar>
-                          <div className="max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 text-sm ai-message flex items-center gap-1">
+                          <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm ai-message flex items-center gap-1">
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
@@ -486,8 +465,8 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                   </div>
                 </ScrollArea>
             </main>
-            <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <div className="contents">
+            <footer className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm z-10">
+                <form ref={formRef} onSubmit={onFormSubmit} className="contents">
                     <div className="max-w-4xl mx-auto w-full">
                     {uploadedImagePreview && (
                         <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -498,8 +477,8 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                             </Button>
                         </div>
                     )}
-                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
-                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                    <div className="flex items-start gap-4 px-3 py-2 rounded-2xl bg-card border shadow-sm">
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
                             <span className="sr-only">Upload file</span>
                         </Button>
@@ -513,22 +492,23 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
+                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                         rows={1}
                         disabled={pending}
                         />
-                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full self-center", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
+                        <Button type="button" variant="ghost" size="icon" className={cn("shrink-0 rounded-full", isRecording && "text-destructive")} onClick={handleMicClick} disabled={pending}>
                             <Mic className="h-5 w-5" />
                             <span className="sr-only">Use microphone</span>
                         </Button>
                         <SubmitButton />
                     </div>
                     </div>
-                </div>
+                </form>
             </footer>
         </div>
       );
-};
+});
+ChatView.displayName = 'ChatView';
 
 function AppContent({ state, formAction }) {
     const { pending } = useFormStatus();
@@ -691,34 +671,8 @@ export default function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
 
     return (
-        <form action={formAction} className="contents" onSubmit={(e) => {
-            // This setup is a bit complex. The goal is to have a single form action
-            // for the server, but handle the UI updates and submission logic on the client.
-            // The `AppContent` component has its own `handleClientSideSubmit` function.
-            // We're essentially stopping the parent form's default submission and
-            // manually triggering the submission logic within the AppContent component.
-            
-            // By wrapping AppContent, we provide it with the server action `formAction`.
-            // The `handleClientSideSubmit` function inside AppContent will then call
-            // this `formAction` with the form data.
-            const form = e.currentTarget;
-            const appContentElement = form.firstElementChild; // This should be the root of AppContent
-            if (appContentElement) {
-                // We need a way to call `handleClientSideSubmit` from here.
-                // Since we can't directly call it, we'll let the onFormSubmit prop handle it.
-                // The `AppContent` component will render either `WelcomeView` or `ChatView`.
-                // Both of those have a form with an `onSubmit` that points to `handleClientSideSubmit`.
-                // We will simulate a submission on that inner form.
-                const innerForm = appContentElement.querySelector('form');
-                if (innerForm) {
-                    e.preventDefault();
-                    innerForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }
-            }
-        }}>
-           <AppContent state={state} formAction={formAction} />
-        </form>
+        <FormStatusWrapper formAction={formAction} state={state}>
+            <AppContent state={state} formAction={formAction} />
+        </FormStatusWrapper>
     );
 }
-
-    
