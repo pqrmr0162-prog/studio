@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -131,6 +131,40 @@ export default function Home() {
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submittedPrompt = useRef("");
+
+
+  const handleFormAction = (formData: FormData) => {
+    const currentPrompt = formData.get("prompt") as string;
+    submittedPrompt.current = currentPrompt;
+
+    if (editingMessageId !== null) {
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                    newMessages.splice(editedMessageIndex + 1);
+                }
+            }
+            return newMessages;
+        });
+    } else if (currentPrompt.trim() || uploadedImage) {
+        const userMessage: Message = {
+            id: Date.now(),
+            sender: 'user',
+            text: currentPrompt,
+            imageUrl: uploadedImagePreview ?? undefined,
+        };
+        setMessages(prev => {
+            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+            return [...newMessages, userMessage];
+        });
+    }
+
+    formAction(formData);
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -163,10 +197,12 @@ export default function Home() {
         description: state.error,
       });
        setMessages(prev => {
-        if (prev.length > 0 && prev[prev.length -1].sender === 'user') {
-            return prev.slice(0, -1);
-        }
-        return prev;
+         const lastMessage = prev[prev.length - 1];
+         // Only remove the last message if it was the user's optimistic message that failed
+         if (lastMessage?.sender === 'user' && lastMessage.text === submittedPrompt.current) {
+           return prev.slice(0, -1);
+         }
+         return prev;
        });
 
     } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
@@ -187,15 +223,8 @@ export default function Home() {
           setMessages(prev => {
               const newMessages = [...prev];
               const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-
-              if (editedMessageIndex !== -1) {
-                  if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                    newMessages.splice(editedMessageIndex + 1, 1);
-                  }
-              }
               const insertIndex = editedMessageIndex + 1;
               newMessages.splice(insertIndex, 0, newAiMessage);
-
               return newMessages;
           });
           setEditingMessageId(null);
@@ -212,40 +241,8 @@ export default function Home() {
 
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, toast]);
+  }, [state]);
 
-
-  useEffect(() => {
-    const submittedForm = (formRef.current?.elements.namedItem('prompt') as HTMLInputElement)?.form;
-    if (!submittedForm) return;
-
-    const formData = new FormData(submittedForm);
-    const currentPrompt = formData.get('prompt') as string;
-    
-    if (editingMessageId !== null) {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-            if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                newMessages.splice(editedMessageIndex + 1);
-            }
-            return newMessages;
-        });
-    } else if (currentPrompt.trim() || uploadedImage) {
-        const userMessage: Message = {
-            id: Date.now(),
-            sender: 'user',
-            text: currentPrompt,
-            imageUrl: uploadedImagePreview ?? undefined,
-        };
-        setMessages(prev => {
-            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-            return [...newMessages, userMessage];
-        });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.response, state.imageUrl, state.sources, state.error]);
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -264,10 +261,6 @@ export default function Home() {
     }
   };
   
-  const handleFormSubmit = (formData: FormData) => {
-    formAction(formData);
-  };
-  
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
@@ -276,10 +269,9 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setPrompt(suggestion);
     const formData = new FormData();
     formData.append("prompt", suggestion);
-    handleFormSubmit(formData);
+    handleFormAction(formData);
   }
 
   const handleNewChat = () => {
@@ -368,7 +360,6 @@ export default function Home() {
 
   if (messages.length === 0) {
     return <WelcomeScreen 
-      handleFormSubmit={handleFormSubmit}
       fileInputRef={fileInputRef}
       handleFileChange={handleFileChange}
       textareaRef={textareaRef}
@@ -378,7 +369,7 @@ export default function Home() {
       handleMicClick={handleMicClick}
       uploadedImagePreview={uploadedImagePreview}
       handleRemoveImage={handleRemoveImage}
-      formAction={formAction}
+      formAction={handleFormAction}
     />;
   }
 
@@ -536,7 +527,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={handleFormSubmit}
+                action={handleFormAction}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
