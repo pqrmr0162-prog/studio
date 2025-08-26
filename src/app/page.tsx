@@ -49,8 +49,7 @@ function SubmitButton() {
   );
 }
 
-const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit }) {
-    const { pending } = useFormStatus();
+const WelcomeView = ({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit, pending }) => {
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
@@ -62,7 +61,6 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     };
     
     return (
-    <form ref={formRef} action={onSubmit as any} className="contents">
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
@@ -113,12 +111,10 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
             Developed by Bissu
         </footer>
         </div>
-    </form>
     );
-});
+};
 
-const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, onSubmit }) {
-    const { pending } = useFormStatus();
+const ChatView = ({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, onSubmit, pending }) => {
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
@@ -313,7 +309,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
             </footer>
         </div>
       );
-});
+};
 
 
 export default function Home() {
@@ -327,16 +323,16 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isFirstRender = useRef(true);
+  const isSubmitting = useRef(false);
   
   const handleClientSideSubmit = (formData: FormData) => {
-    if (isSubmitting) return;
+    if (isSubmitting.current) return;
 
     const currentPrompt = formData.get("prompt") as string;
     
@@ -344,7 +340,7 @@ export default function Home() {
         return;
     }
     
-    setIsSubmitting(true);
+    isSubmitting.current = true;
     
     const userMessage: Message = {
         id: Date.now(),
@@ -383,7 +379,7 @@ export default function Home() {
         return;
     }
     
-    setIsSubmitting(false);
+    isSubmitting.current = false;
 
     if (state.error) {
         toast({
@@ -470,11 +466,13 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    if (isSubmitting) return;
+    if (isSubmitting.current) return;
     setPrompt(suggestion);
     setTimeout(() => {
         if (formRef.current) {
-            handleClientSideSubmit(new FormData(formRef.current));
+            const formData = new FormData(formRef.current);
+            formData.set('prompt', suggestion);
+            handleClientSideSubmit(formData);
         }
     }, 100);
   }
@@ -498,7 +496,7 @@ export default function Home() {
   }
 
   const handleEdit = (message: Message) => {
-    if (isSubmitting) return;
+    if (isSubmitting.current) return;
     setEditingMessageId(message.id);
     setPrompt(message.text);
     if (message.imageUrl) {
@@ -510,7 +508,7 @@ export default function Home() {
   }
 
   const handleMicClick = () => {
-    if (isSubmitting || isRecording) {
+    if (isSubmitting.current || isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
       return;
@@ -564,39 +562,32 @@ export default function Home() {
     }
   };
   
-  // This component will be re-rendered whenever `isSubmitting` changes.
-  // We use this to wrap the actual view components.
-  const FormStatusWrapper = ({ children }: { children: React.ReactNode }) => {
-    return <form
-      ref={formRef}
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleClientSideSubmit(new FormData(e.currentTarget));
-      }}
-      className="contents"
-    >
-      {children}
-    </form>
-  }
-  
-  const commonProps = {
-    fileInputRef,
-    handleFileChange,
-    textareaRef,
-    prompt,
-    setPrompt,
-    isRecording,
-    handleMicClick,
-    uploadedImagePreview,
-    handleRemoveImage,
-    formRef,
-  };
+  const AppContent = () => {
+    const { pending } = useFormStatus();
 
-  const MemoizedWelcomeView = React.memo(function MemoizedWelcomeView() {
-    return <WelcomeView {...commonProps} onSubmit={handleClientSideSubmit} />
-  });
-  
-  const MemoizedChatView = React.memo(function MemoizedChatView() {
+    useEffect(() => {
+        isSubmitting.current = pending;
+    }, [pending]);
+
+    const commonProps = {
+        fileInputRef,
+        handleFileChange,
+        textareaRef,
+        prompt,
+        setPrompt,
+        isRecording,
+        handleMicClick,
+        uploadedImagePreview,
+        handleRemoveImage,
+        formRef,
+        onSubmit: handleClientSideSubmit,
+        pending
+    };
+
+    if (messages.length === 0 && !pending) {
+        return <WelcomeView {...commonProps} />;
+    }
+    
     return <ChatView 
         {...commonProps}
         messages={messages}
@@ -607,30 +598,19 @@ export default function Home() {
         handleEdit={handleEdit}
         handleSuggestionClick={handleSuggestionClick}
         viewportRef={viewportRef}
-        onSubmit={handleClientSideSubmit}
     />
-  });
-
-  // Since `useFormStatus` must be used within a form, we create a small
-  // wrapper component that has access to the form's pending state.
-  const AppContent = () => {
-    const { pending } = useFormStatus();
-
-    // We use an effect to sync the form's pending state with our component's state
-    useEffect(() => {
-        setIsSubmitting(pending);
-    }, [pending]);
-
-    if (messages.length === 0 && !pending) {
-        return <MemoizedWelcomeView />;
-    }
-    
-    return <MemoizedChatView />;
   }
 
   return (
-    <FormStatusWrapper>
-        <AppContent />
-    </FormStatusWrapper>
+    <form
+      ref={formRef}
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleClientSideSubmit(new FormData(e.currentTarget));
+      }}
+      className="contents"
+    >
+      <AppContent />
+    </form>
   );
 }
