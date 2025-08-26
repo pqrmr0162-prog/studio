@@ -49,7 +49,7 @@ function SubmitButton() {
   );
 }
 
-const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef }) {
+const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, formAction }) {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
@@ -58,6 +58,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     };
     
     return (
+    <form ref={formRef} action={formAction} className="contents">
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
@@ -107,10 +108,11 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
             Developed by Bissu
         </footer>
         </div>
+    </form>
     );
 });
 
-const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, editingMessageId, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef }) {
+const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, formAction }) {
     const { pending } = useFormStatus();
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -262,6 +264,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, edi
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
+              <form ref={formRef} action={formAction} className="contents">
                 <div className="max-w-4xl mx-auto w-full">
                 {uploadedImagePreview && (
                     <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -282,11 +285,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, edi
                     <Textarea
                       ref={textareaRef}
                       name="prompt"
-                      placeholder={
-                          editingMessageId 
-                              ? "Edit your message..." 
-                              : "Ask about an image or just chat. Try 'generate image of a cat'"
-                      }
+                      placeholder={"Ask about an image or just chat. Try 'generate image of a cat'"}
                       autoComplete="off"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
@@ -301,6 +300,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, edi
                     <SubmitButton />
                 </div>
                 </div>
+               </form>
             </footer>
         </div>
       );
@@ -308,7 +308,10 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, edi
 
 
 export default function Home() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(getAiResponse, initialState);
+  const { pending } = useFormStatus();
+
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -318,53 +321,119 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
   
-  const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedPrompt = useRef("");
+  
+  const isFirstRender = useRef(true);
 
-  const handleFormSubmit = (formData: FormData) => {
-    const currentPrompt = formData.get("prompt") as string;
-    
-    if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
+  useEffect(() => {
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
         return;
     }
     
-    lastSubmittedPrompt.current = currentPrompt;
+    if (!pending) {
+        if (state.error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: state.error,
+            });
+            // Remove the optimistic user message if the action failed
+            setMessages(prev => prev.filter(m => m.text !== lastSubmittedPrompt.current));
 
-    const userMessage: Message = {
-        id: Date.now(),
-        sender: 'user',
-        text: currentPrompt,
-        imageUrl: uploadedImagePreview ?? undefined,
-    };
-    if (editingMessageId !== null) {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-            if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                    newMessages.splice(editedMessageIndex + 1, 1);
-                }
+        } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
+            if (!state.response && !state.imageUrl && (!state.sources || state.sources.length === 0)) {
+                return;
             }
-            return newMessages;
-        });
-    } else {
-        setMessages(prev => {
-            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-            return [...newMessages, userMessage];
-        });
-    }
 
-    formAction(formData);
-    setPrompt("");
-    if (!editingMessageId) {
-        handleRemoveImage();
+            const newAiMessage: Message = { 
+                id: Date.now(), 
+                sender: 'ai', 
+                text: state.response || "",
+                imageUrl: state.imageUrl || undefined,
+                suggestions: state.suggestions || undefined,
+                sources: state.sources || undefined,
+            };
+            
+            if (editingMessageId !== null) {
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                    const insertIndex = editedMessageIndex + 1;
+                    if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
+                        newMessages[insertIndex] = newAiMessage;
+                    } else {
+                        newMessages.splice(insertIndex, 0, newAiMessage);
+                    }
+                    return newMessages;
+                });
+                setEditingMessageId(null);
+                handleRemoveImage();
+            } else {
+                setMessages((prev) => [...prev, newAiMessage]);
+            }
+        }
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, state]);
+
+
+  useEffect(() => {
+    if (formRef.current) {
+        const handleFormSubmit = () => {
+            const formData = new FormData(formRef.current!);
+            const currentPrompt = formData.get("prompt") as string;
+    
+            if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
+                return;
+            }
+            
+            lastSubmittedPrompt.current = currentPrompt;
+            
+            const userMessage: Message = {
+                id: Date.now(),
+                sender: 'user',
+                text: currentPrompt,
+                imageUrl: uploadedImagePreview ?? undefined,
+            };
+
+            if (editingMessageId !== null) {
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                    if (editedMessageIndex !== -1) {
+                        newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                        if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                            newMessages.splice(editedMessageIndex + 1, 1);
+                        }
+                    }
+                    return newMessages;
+                });
+            } else {
+                setMessages(prev => {
+                    const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+                    return [...newMessages, userMessage];
+                });
+            }
+
+            setPrompt("");
+            if (!editingMessageId) {
+                handleRemoveImage();
+            }
+        };
+
+        const currentForm = formRef.current;
+        currentForm.addEventListener('submit', handleFormSubmit);
+
+        return () => {
+            currentForm.removeEventListener('submit', handleFormSubmit);
+        };
+    }
+  }, [editingMessageId, uploadedImage, uploadedImagePreview]);
 
 
   useEffect(() => {
@@ -393,61 +462,6 @@ export default function Home() {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
-  
-  useEffect(() => {
-    if (state.error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: state.error,
-      });
-       setMessages(prev => {
-         const lastMessage = prev[prev.length - 1];
-         if (lastMessage?.sender === 'user' && lastMessage.text === lastSubmittedPrompt.current) {
-           return prev.slice(0, -1);
-         }
-         return prev;
-       });
-
-    } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
-        if (!state.response && !state.imageUrl && (!state.sources || state.sources.length === 0)) {
-            return;
-        }
-
-       const newAiMessage: Message = { 
-        id: Date.now(), 
-        sender: 'ai', 
-        text: state.response || "",
-        imageUrl: state.imageUrl || undefined,
-        suggestions: state.suggestions || undefined,
-        sources: state.sources || undefined,
-      };
-
-      if (editingMessageId !== null) {
-          setMessages(prev => {
-              const newMessages = [...prev];
-              const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-              const insertIndex = editedMessageIndex + 1;
-              if (insertIndex < newMessages.length && newMessages[insertIndex].sender === 'ai') {
-                  newMessages[insertIndex] = newAiMessage;
-              } else {
-                  newMessages.splice(insertIndex, 0, newAiMessage);
-              }
-              return newMessages;
-          });
-          setEditingMessageId(null);
-          handleRemoveImage();
-      } else {
-        setMessages((prev) => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage && lastMessage.id === newAiMessage.id) return prev;
-            return [...prev, newAiMessage]
-        });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -522,7 +536,7 @@ export default function Home() {
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = false;
-    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.lang = 'en-IN';
 
     recognitionRef.current.onstart = () => {
       setIsRecording(true);
@@ -558,7 +572,7 @@ export default function Home() {
     }
   };
 
-  const viewProps = {
+  const commonProps = {
     fileInputRef,
     handleFileChange,
     textareaRef,
@@ -569,37 +583,24 @@ export default function Home() {
     uploadedImagePreview,
     handleRemoveImage,
     formRef,
+    formAction,
   };
 
-  const chatViewProps = {
-    messages,
-    prompt,
-    setPrompt,
-    editingMessageId,
-    uploadedImagePreview,
-    theme,
-    handleNewChat,
-    toggleTheme,
-    handleCopy,
-    handleEdit,
-    handleSuggestionClick,
-    isRecording,
-    handleMicClick,
-    handleRemoveImage,
-    formRef,
-    fileInputRef,
-    handleFileChange,
-    textareaRef,
-    viewportRef,
-  };
+  if (messages.length === 0) {
+    return <WelcomeView {...commonProps} />;
+  }
 
   return (
-    <form ref={formRef} action={handleFormSubmit} className="contents">
-      {messages.length === 0 ? (
-        <WelcomeView {...viewProps} />
-      ) : (
-        <ChatView {...chatViewProps} />
-      )}
-    </form>
+    <ChatView 
+        {...commonProps}
+        messages={messages}
+        theme={theme}
+        handleNewChat={handleNewChat}
+        toggleTheme={toggleTheme}
+        handleCopy={handleCopy}
+        handleEdit={handleEdit}
+        handleSuggestionClick={handleSuggestionClick}
+        viewportRef={viewportRef}
+    />
   );
 }
