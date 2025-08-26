@@ -53,17 +53,19 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
-        formRef.current?.requestSubmit();
+        if (formRef.current) {
+            onSubmit(new FormData(formRef.current));
+        }
       }
     };
     
     return (
-    <form ref={formRef} action={onSubmit} className="contents">
+    <form ref={formRef} action={onSubmit as any} className="contents">
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <CrowLogo className="w-8 h-8"/>
+                <div className="flex items-center justify-center gap-4 mb-4">
+                    <CrowLogo className="w-16 h-16"/>
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
                 </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
@@ -118,7 +120,9 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
           event.preventDefault();
-          formRef.current?.requestSubmit();
+          if (formRef.current) {
+            onSubmit(new FormData(formRef.current));
+          }
       }
     };
     
@@ -264,7 +268,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-              <form ref={formRef} action={onSubmit} className="contents">
+              <form ref={formRef} action={onSubmit as any} className="contents">
                 <div className="max-w-4xl mx-auto w-full">
                 {uploadedImagePreview && (
                     <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -323,7 +327,6 @@ export default function Home() {
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const lastSubmittedPrompt = useRef("");
   const { pending } = useFormStatus();
   const isFirstRender = useRef(true);
   
@@ -334,8 +337,6 @@ export default function Home() {
         return;
     }
     
-    lastSubmittedPrompt.current = currentPrompt;
-
     const userMessage: Message = {
         id: Date.now(),
         sender: 'user',
@@ -380,13 +381,12 @@ export default function Home() {
                 title: "Error",
                 description: state.error,
             });
-            setMessages(prev => prev.filter(m => m.text !== lastSubmittedPrompt.current));
-        } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
-            if (!state.response && !state.imageUrl && (!state.sources || state.sources.length === 0)) {
-                return;
+            // Revert on error
+            if (editingMessageId === null) {
+                setMessages(prev => prev.slice(0, -1));
             }
-
-            const newAiMessage: Message = { 
+        } else if (state.response || state.imageUrl) {
+             const newAiMessage: Message = { 
                 id: Date.now(), 
                 sender: 'ai', 
                 text: state.response || "",
@@ -463,7 +463,9 @@ export default function Home() {
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
     setTimeout(() => {
-        formRef.current?.requestSubmit();
+        if (formRef.current) {
+            handleClientSideSubmit(new FormData(formRef.current));
+        }
     }, 100);
   }
 
@@ -547,7 +549,6 @@ export default function Home() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-        // No need to set the file in state, we can get it from the form
         setUploadedImagePreview(URL.createObjectURL(file));
     }
   };
