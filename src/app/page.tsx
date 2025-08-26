@@ -64,14 +64,14 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
             <div className="w-full max-w-2xl">
                 <div className="flex items-center justify-center gap-4 mb-4">
                 <CrowLogo className="w-16 h-16 md:w-20 md:h-20 text-primary"/>
-                <h1 className="text-4xl md:text-5xl font-bold">AeonAI</h1>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold">AeonAI</h1>
                 </div>
-            <h2 className="text-2xl md:text-3xl font-bold">How can I help you today?</h2>
-            <div className="mt-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
+            <div className="mt-8 w-full">
                 <form
                     ref={welcomeFormRef}
                     action={formAction}
-                    className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
+                    className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto"
                 >
                     <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()}>
                         <Paperclip className="h-5 w-5" />
@@ -125,8 +125,7 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
-  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
-
+  
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -155,7 +154,7 @@ export default function Home() {
       localStorage.setItem('theme', theme);
     }
   }, [theme]);
-
+  
   useEffect(() => {
     if (state.error) {
       toast({
@@ -218,7 +217,10 @@ export default function Home() {
 
   useEffect(() => {
     const submittedForm = (formRef.current?.elements.namedItem('prompt') as HTMLInputElement)?.form;
-    const currentPrompt = submittedForm ? (new FormData(submittedForm)).get('prompt') as string : lastSubmittedPrompt;
+    if (!submittedForm) return;
+
+    const formData = new FormData(submittedForm);
+    const currentPrompt = formData.get('prompt') as string;
     
     if (editingMessageId !== null) {
         setMessages(prev => {
@@ -263,8 +265,6 @@ export default function Home() {
   };
   
   const handleFormSubmit = (formData: FormData) => {
-    const promptValue = formData.get("prompt") as string;
-    setLastSubmittedPrompt(promptValue);
     formAction(formData);
   };
   
@@ -276,6 +276,7 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    setPrompt(suggestion);
     const formData = new FormData();
     formData.append("prompt", suggestion);
     handleFormSubmit(formData);
@@ -383,7 +384,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 md:p-4 z-10">
+        <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 sm:p-4 z-10 border-b">
           <div className="flex items-center gap-2">
             <CrowLogo className="w-8 h-8"/>
             <div>
@@ -404,7 +405,7 @@ export default function Home() {
         </header>
         <main className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full" viewportRef={viewportRef}>
-              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 md:p-6 pb-24 md:pb-28">
+              <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto w-full p-2 sm:p-4 md:p-6 pb-24 md:pb-28">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -525,7 +526,7 @@ export default function Home() {
         <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
             <div className="max-w-4xl mx-auto w-full">
             {uploadedImagePreview && (
-                <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2">
+                <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
                     <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
                     <span className="text-sm truncate">Image attached</span>
                     <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 shrink-0" onClick={handleRemoveImage}>
@@ -535,7 +536,7 @@ export default function Home() {
             )}
             <form
                 ref={formRef}
-                action={formAction}
+                action={handleFormSubmit}
                 className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm"
             >
                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full self-center" onClick={() => fileInputRef.current?.click()}>
