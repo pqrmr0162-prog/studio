@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, Link as LinkIcon, Mic, Paperclip, LoaderCircle } from "lucide-react";
+import { SendHorizonal, User, Plus, X, Sun, Moon, Copy, Pencil, Link as LinkIcon, Mic, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
@@ -39,8 +39,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="icon" disabled={pending} className="shrink-0 rounded-full">
-       {pending ? (
-        <LoaderCircle className="h-5 w-5 animate-spin" />
+      {pending ? (
+        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current"></div>
       ) : (
         <SendHorizonal className="h-5 w-5" />
       )}
@@ -49,9 +49,8 @@ function SubmitButton() {
   );
 }
 
-const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
+const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef }) => {
     const { pending } = useFormStatus();
-    const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -70,14 +69,16 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
         adjustTextareaHeight();
         window.addEventListener('resize', adjustTextareaHeight);
         return () => window.removeEventListener('resize', adjustTextareaHeight);
-    }, [adjustTextareaHeight]);
+    }, [adjustTextareaHeight, prompt]);
 
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
-        const formData = new FormData(formRef.current!);
-        onFormSubmit(formData);
+        if (formRef.current) {
+          const formData = new FormData(formRef.current);
+          onFormSubmit(formData);
+        }
       }
     };
     
@@ -146,8 +147,8 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
 
 
     return (
-        <div className="flex flex-col h-screen bg-background p-4 sm:p-6 md:p-8">
-            <main className="flex-1 flex flex-col items-center justify-center text-center">
+        <div className="flex flex-col h-screen bg-background p-4 md:p-6 lg:p-8">
+            <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
                 <div className="w-full max-w-2xl">
                     <div className="flex flex-col items-center justify-center gap-2 mb-4">
                         <CrowLogo className="w-28 h-28 sm:w-32 sm:h-32"/>
@@ -155,7 +156,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                     </div>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
                 <div className="mt-8 w-full">
-                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
+                    <div className="relative flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm max-w-3xl mx-auto">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
                             <span className="sr-only">Upload file</span>
@@ -168,7 +169,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
                             placeholder="Message AeonAI..."
                             autoComplete="off"
                             value={prompt}
-                            onChange={(e) => {setPrompt(e.target.value); adjustTextareaHeight();}}
+                            onChange={(e) => {setPrompt(e.target.value);}}
                             onKeyDown={handleKeyDown}
                             className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                             rows={1}
@@ -199,9 +200,8 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt }) => {
     );
 };
 
-const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId }) => {
+const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef }) => {
     const { pending } = useFormStatus();
-    const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -217,7 +217,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         }
     }, []);
     
-    const useChatActions = ({ setMessages, setPrompt, setEditingMessageId, handleFormSubmit, pending }) => {
+    const useChatActions = () => {
         const { toast } = useToast();
 
         const handleCopy = (text: string) => {
@@ -243,7 +243,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             formData.append('prompt', newPrompt);
             
             setTimeout(() => {
-                handleFormSubmit(formData, true);
+                onFormSubmit(formData);
             }, 100);
         };
         
@@ -256,22 +256,12 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         return { handleCopy, handleEdit, handleSuggestionClick, handleNewChat };
     }
 
-    const chatActions = useChatActions({
-        setMessages,
-        setPrompt,
-        setEditingMessageId,
-        handleFormSubmit: (formData) => {
-            handleRemoveImage();
-            onFormSubmit(formData, true);
-        },
-        pending,
-    });
+    const chatActions = useChatActions();
     
     useLayoutEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
         document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-        document.documentElement.classList.toggle('light', storedTheme !== 'dark');
     }, []);
     
     const adjustTextareaHeight = useCallback(() => {
@@ -285,13 +275,15 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         adjustTextareaHeight();
         window.addEventListener('resize', adjustTextareaHeight);
         return () => window.removeEventListener('resize', adjustTextareaHeight);
-    }, [adjustTextareaHeight]);
+    }, [adjustTextareaHeight, prompt]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
           event.preventDefault();
-          const formData = new FormData(formRef.current!);
-          onFormSubmit(formData);
+          if (formRef.current) {
+            const formData = new FormData(formRef.current);
+            onFormSubmit(formData);
+          }
       }
     };
 
@@ -307,7 +299,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
             const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
             localStorage.setItem('theme', newTheme);
             document.documentElement.classList.toggle('dark', newTheme === 'dark');
-            document.documentElement.classList.toggle('light', newTheme !== 'dark');
             return newTheme;
         });
     };
@@ -504,7 +495,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 sm:p-4 bg-background/80 backdrop-blur-sm z-10">
-                <form ref={formRef} onSubmit={(e) => { e.preventDefault(); onFormSubmit(new FormData(e.currentTarget)); }} className="max-w-4xl mx-auto w-full">
+                <div className="max-w-4xl mx-auto w-full">
                     {uploadedImagePreview && (
                         <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
                             <Image src={uploadedImagePreview} alt="Preview" width={40} height={40} className="rounded-md" />
@@ -514,7 +505,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                             </Button>
                         </div>
                     )}
-                    <div className="flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
+                    <div className="relative flex items-start gap-2 md:gap-4 px-2 py-1.5 rounded-2xl bg-card border shadow-sm">
                         <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                             <Paperclip className="h-5 w-5" />
                             <span className="sr-only">Upload file</span>
@@ -527,7 +518,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         placeholder="Message AeonAI..."
                         autoComplete="off"
                         value={prompt}
-                        onChange={(e) => {setPrompt(e.target.value); adjustTextareaHeight();}}
+                        onChange={(e) => {setPrompt(e.target.value);}}
                         onKeyDown={handleKeyDown}
                         className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
                         rows={1}
@@ -539,21 +530,22 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         </Button>
                         <SubmitButton />
                     </div>
-                </form>
+                </div>
             </footer>
         </div>
       );
 };
 
 function AppContent({ state, formAction }) {
-    const { pending } = useFormStatus();
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
     const initialToastShown = useRef(false);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const { pending } = useFormStatus();
 
     const [isPending, startTransition] = useTransition();
 
@@ -609,7 +601,7 @@ function AppContent({ state, formAction }) {
         }
     }, [messages, pending]);
 
-    const handleFormSubmit = useCallback((formData: FormData, isSuggestionClick = false) => {
+    const handleFormSubmit = useCallback((formData: FormData) => {
         if (pending || isPending) return;
 
         const currentPrompt = formData.get("prompt") as string;
@@ -633,6 +625,7 @@ function AppContent({ state, formAction }) {
                 if (editedMessageIndex !== -1) {
                     newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: userMessage.imageUrl || newMessages[editedMessageIndex].imageUrl };
                     if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                        // Invalidate the old AI response
                         newMessages.splice(editedMessageIndex + 1, 1);
                     }
                 }
@@ -650,11 +643,11 @@ function AppContent({ state, formAction }) {
         });
         
         setPrompt("");
-        const form = document.querySelector('form');
-        if (form) {
-            const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+        if(formRef.current) {
+            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
             if (fileInput) fileInput.value = "";
-            const textarea = form.querySelector('textarea');
+            
+            const textarea = formRef.current.querySelector('textarea');
             if(textarea) {
               textarea.style.height = 'auto'; 
             }
@@ -664,22 +657,15 @@ function AppContent({ state, formAction }) {
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        
-        const form = event.currentTarget;
-        const formData = new FormData(form);
-        const promptValue = formData.get('prompt')?.toString().trim();
-        const fileValue = formData.get('uploadedFile') as File;
-
-        if ((promptValue && promptValue.length > 0) || (fileValue && fileValue.size > 0)) {
-            handleFormSubmit(formData);
-        }
+        const formData = new FormData(event.currentTarget);
+        handleFormSubmit(formData);
     };
 
 
     return (
-        <form onSubmit={handleSubmit} className="contents">
+        <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="contents">
             {messages.length === 0 && !pending ? (
-                 <WelcomeView onFormSubmit={handleFormSubmit} prompt={prompt} setPrompt={setPrompt} />
+                 <WelcomeView onFormSubmit={handleFormSubmit} prompt={prompt} setPrompt={setPrompt} formRef={formRef} />
             ) : (
                 <ChatView
                     messages={messages}
@@ -690,6 +676,7 @@ function AppContent({ state, formAction }) {
                     viewportRef={viewportRef}
                     editingMessageId={editingMessageId}
                     setEditingMessageId={setEditingMessageId}
+                    formRef={formRef}
                 />
             )}
         </form>
@@ -705,3 +692,5 @@ function Home() {
 }
 
 export default Home;
+
+    
