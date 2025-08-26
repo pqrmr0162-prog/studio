@@ -3,6 +3,7 @@
 import { interpretPrompt } from "@/ai/flows/interpret-prompt";
 import type { InterpretPromptInput } from "@/ai/flows/interpret-prompt";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
+import type { TextToSpeechInput } from "@/ai/flows/text-to-speech";
 
 interface FormState {
   response: string | null;
@@ -48,13 +49,13 @@ export async function getAiResponse(
 }
 
 export async function textToSpeechAction(
-    text: string
+    input: TextToSpeechInput
 ): Promise<AudioState> {
-    if (!text) {
+    if (!input.text) {
         return { audioDataUri: null, error: "No text provided to synthesize." };
     }
     try {
-        const result = await textToSpeech(text);
+        const result = await textToSpeech(input);
         return { audioDataUri: result.audioDataUri, error: null };
     } catch (error) {
         console.error(error);

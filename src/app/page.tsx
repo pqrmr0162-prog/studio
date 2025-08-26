@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader } from "lucide-react";
+import { SendHorizonal, User, Bot, Plus, Paperclip, X, Sun, Moon, Volume2, Loader, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const initialState = {
   response: null,
@@ -24,6 +27,15 @@ interface Message {
   text: string;
   imageUrl?: string;
 }
+
+const availableVoices = [
+    { id: 'Procyon', name: 'Procyon (Male, Sophisticated)'},
+    { id: 'Sirius', name: 'Sirius (Male, Robotic)'},
+    { id: 'Lyra', name: 'Lyra (Female, Calm)'},
+    { id: 'Orion', name: 'Orion (Male, Deep)'},
+    { id: 'Vega', name: 'Vega (Female, Crisp)'},
+    { id: 'Aquila', name: 'Aquila (Male, Raspy)'},
+]
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -49,6 +61,8 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const [loadingAudio, setLoadingAudio] = useState<number | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState('Procyon');
+
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +75,10 @@ export default function Home() {
     if (storedTheme) {
       setTheme(storedTheme);
     }
+    const storedVoice = localStorage.getItem('voice');
+    if (storedVoice) {
+      setSelectedVoice(storedVoice);
+    }
   }, []);
   
   useEffect(() => {
@@ -68,6 +86,10 @@ export default function Home() {
     document.documentElement.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('voice', selectedVoice);
+  }, [selectedVoice]);
 
   useEffect(() => {
     if (state.error) {
@@ -160,7 +182,7 @@ export default function Home() {
     
     setLoadingAudio(message.id);
     try {
-        const result = await textToSpeechAction(message.text);
+        const result = await textToSpeechAction({text: message.text, voice: selectedVoice});
         if (result.error) {
             toast({
                 variant: "destructive",
@@ -208,6 +230,34 @@ export default function Home() {
                 <Plus size={16}/>
                 <span className="hidden md:inline ml-2">New Chat</span>
             </Button>
+             <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <Settings size={20} />
+                        <span className="sr-only">Settings</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent>
+                    <SheetHeader>
+                        <SheetTitle>Settings</SheetTitle>
+                    </SheetHeader>
+                    <div className="py-4">
+                        <Label className="text-sm font-medium">Voice Selection</Label>
+                        <RadioGroup
+                            value={selectedVoice}
+                            onValueChange={setSelectedVoice}
+                            className="mt-2 space-y-2"
+                        >
+                            {availableVoices.map((voice) => (
+                                <div key={voice.id} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={voice.id} id={voice.id} />
+                                    <Label htmlFor={voice.id} className="font-normal">{voice.name}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                </SheetContent>
+            </Sheet>
           </div>
         </header>
         <main className="flex-1 flex flex-col p-2 md:p-6">
