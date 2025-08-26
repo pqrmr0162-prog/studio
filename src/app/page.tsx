@@ -49,7 +49,7 @@ function SubmitButton() {
   );
 }
 
-const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, formAction }) {
+const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formRef, onSubmit }) {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
@@ -58,7 +58,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     };
     
     return (
-    <form ref={formRef} action={formAction} className="contents">
+    <form ref={formRef} onSubmit={onSubmit} className="contents">
         <div className="flex flex-col h-screen bg-background">
         <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <div className="w-full max-w-2xl">
@@ -112,7 +112,7 @@ const WelcomeView = React.memo(function WelcomeView({ fileInputRef, handleFileCh
     );
 });
 
-const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, formAction }) {
+const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, uploadedImagePreview, theme, handleNewChat, toggleTheme, handleCopy, handleEdit, handleSuggestionClick, isRecording, handleMicClick, handleRemoveImage, formRef, fileInputRef, handleFileChange, textareaRef, viewportRef, onSubmit }) {
     const { pending } = useFormStatus();
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -124,7 +124,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
     
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 sm:p-4 z-10">
+            <header className="flex items-center shrink-0 gap-2 md:gap-4 p-2 sm:p-4 border-b">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -264,7 +264,7 @@ const ChatView = React.memo(function ChatView({ messages, prompt, setPrompt, upl
                 </ScrollArea>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/80 backdrop-blur-sm z-10">
-              <form ref={formRef} action={formAction} className="contents">
+              <form ref={formRef} onSubmit={onSubmit} className="contents">
                 <div className="max-w-4xl mx-auto w-full">
                 {uploadedImagePreview && (
                     <div className="relative mb-2 p-2 bg-muted rounded-lg flex items-center gap-2 max-w-sm mx-auto">
@@ -315,7 +315,6 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
@@ -380,57 +379,49 @@ export default function Home() {
   }, [state, pending]);
 
 
-  useEffect(() => {
-    const form = formRef.current;
-    if (!form) return;
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    formAction(formData);
 
-    const handleClientSideSubmit = (event: Event) => {
-        const formData = new FormData(form);
-        const currentPrompt = formData.get("prompt") as string;
-
-        if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImage) {
-            return;
-        }
-
-        lastSubmittedPrompt.current = currentPrompt;
-        
-        const userMessage: Message = {
-            id: Date.now(),
-            sender: 'user',
-            text: currentPrompt,
-            imageUrl: uploadedImagePreview ?? undefined,
-        };
-
-        if (editingMessageId !== null) {
-            setMessages(prev => {
-                const newMessages = [...prev];
-                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                if (editedMessageIndex !== -1) {
-                    newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
-                    // Remove the old AI response
-                    if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
-                        newMessages.splice(editedMessageIndex + 1, 1);
-                    }
-                }
-                return newMessages;
-            });
-        } else {
-            setMessages(prev => {
-                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-                return [...newMessages, userMessage];
-            });
-        }
-
-        setPrompt("");
-        handleRemoveImage();
-    };
+    const currentPrompt = formData.get("prompt") as string;
     
-    form.addEventListener('submit', handleClientSideSubmit);
-    return () => {
-        form.removeEventListener('submit', handleClientSideSubmit);
+    if ((!currentPrompt || currentPrompt.trim().length === 0) && !uploadedImagePreview) {
+        return;
+    }
+
+    lastSubmittedPrompt.current = currentPrompt;
+
+    const userMessage: Message = {
+        id: Date.now(),
+        sender: 'user',
+        text: currentPrompt,
+        imageUrl: uploadedImagePreview ?? undefined,
     };
 
-  }, [editingMessageId, uploadedImage, uploadedImagePreview]);
+    if (editingMessageId !== null) {
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+            if (editedMessageIndex !== -1) {
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: uploadedImagePreview || newMessages[editedMessageIndex].imageUrl };
+                // Remove the old AI response
+                if (editedMessageIndex + 1 < newMessages.length && newMessages[editedMessageIndex + 1].sender === 'ai') {
+                    newMessages.splice(editedMessageIndex + 1, 1);
+                }
+            }
+            return newMessages;
+        });
+    } else {
+        setMessages(prev => {
+            const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+            return [...newMessages, userMessage];
+        });
+    }
+
+    setPrompt("");
+    handleRemoveImage();
+  };
 
 
   useEffect(() => {
@@ -470,7 +461,6 @@ export default function Home() {
   }, [messages]);
 
   const handleRemoveImage = () => {
-    setUploadedImage(null);
     setUploadedImagePreview(null);
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -564,7 +554,7 @@ export default function Home() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-        setUploadedImage(file);
+        // No need to set the file in state, we can get it from the form
         setUploadedImagePreview(URL.createObjectURL(file));
     }
   };
@@ -580,7 +570,7 @@ export default function Home() {
     uploadedImagePreview,
     handleRemoveImage,
     formRef,
-    formAction,
+    onSubmit: handleSubmit,
   };
 
   if (messages.length === 0) {
