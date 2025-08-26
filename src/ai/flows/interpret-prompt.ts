@@ -19,7 +19,7 @@ const InterpretPromptInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "An optional image attachment, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
+      "An optional file attachment (image, PDF, or text), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 
@@ -175,7 +175,7 @@ If the user asks "how is your owner" or a similar question about your creator or
 
 If the user asks about your capabilities, your identity, or how you compare to other AIs like ChatGPT, Grok, or Perplexity, respond with: "I'm AeonAI, a powerful assistant created by Bissu and powered by Google's latest models. My strength lies in combining my vast knowledge base with real-time information from tools like news APIs to give you comprehensive and up-to-date answers. While models like ChatGPT, Grok, and Perplexity are excellent general-purpose conversational AIs, I'm uniquely integrated into this application to provide a seamless and context-aware experience. My goal is to be the most helpful assistant for you right here, right now."
 
-For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment.
+For all other questions, generate a comprehensive and helpful response to the prompt, taking the attachment into account if it was provided. If an attachment is provided with no prompt, describe the attachment. If the attachment is a document, summarize it or answer any questions the user has about its content.
 
 After your main response, generate a few (2-3) short, relevant follow-up questions or actions the user might want to take next and provide them in the 'suggestions' field. These should be things like "Tell me more about X", "Summarize this in three bullet points", or "What are the key takeaways?".`,
 });
@@ -191,3 +191,5 @@ const interpretPromptFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

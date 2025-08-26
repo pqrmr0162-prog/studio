@@ -29,6 +29,7 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
   imageUrl?: string;
+  attachmentName?: string;
   suggestions?: string[];
   sources?: { title: string; url: string }[];
 }
@@ -164,7 +165,7 @@ export default function Home() {
             const newMessages = [...prev];
             const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
             if (editedMessageIndex !== -1) {
-                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: attachmentPreview || newMessages[editedMessageIndex].imageUrl };
+                newMessages[editedMessageIndex] = { ...newMessages[editedMessageIndex], text: currentPrompt, imageUrl: attachmentPreview || newMessages[editedMessageIndex].imageUrl, attachmentName: attachment?.name };
                 // Remove messages after the edited one, including their suggestions
                 newMessages.splice(editedMessageIndex + 1);
             }
@@ -184,6 +185,9 @@ export default function Home() {
       };
       if (attachmentPreview) {
           userMessage.imageUrl = attachmentPreview;
+      }
+      if (attachment && !attachmentPreview) {
+        userMessage.attachmentName = attachment.name;
       }
       setMessages(prev => {
         const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
@@ -306,7 +310,7 @@ export default function Home() {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
-                  accept="image/*"
+                  accept="image/*,application/pdf,text/plain"
                   />
                   <Input
                   name="prompt"
@@ -427,6 +431,12 @@ export default function Home() {
                               className="rounded-lg mb-2 max-w-full h-auto"
                           />
                         )}
+                        {message.attachmentName && (
+                            <div className="flex items-center gap-2 p-2 bg-background/20 rounded-md mb-2">
+                                <Paperclip className="h-5 w-5" />
+                                <span className="text-sm font-medium truncate">{message.attachmentName}</span>
+                            </div>
+                        )}
                         {message.text && (
                           message.sender === 'ai' ? (
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -514,7 +524,7 @@ export default function Home() {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept="image/*"
+                accept="image/*,application/pdf,text/plain"
                 />
                 <Input
                 name="prompt"
@@ -536,3 +546,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
