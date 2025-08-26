@@ -71,11 +71,9 @@ function useChatActions({ setMessages, setPrompt, setEditingMessageId, handleFor
         const newPrompt = suggestion;
         setPrompt(newPrompt);
         
-        // We need to create a synthetic form data object to submit
         const formData = new FormData();
         formData.append('prompt', newPrompt);
         
-        // Use a timeout to ensure the state has updated before submitting
         setTimeout(() => {
             handleFormSubmit(formData, true);
         }, 100);
@@ -481,13 +479,13 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                       </div>
                     ))}
                     {pending && (
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-2 sm:gap-4">
                           <Avatar className="w-8 h-8 border shrink-0">
                              <AvatarFallback>
                                 <CrowLogo className="w-5 h-5 text-muted-foreground" />
                              </AvatarFallback>
                           </Avatar>
-                          <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm ai-message flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 py-3">
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
@@ -643,13 +641,13 @@ function AppContent({ state, formAction }) {
         });
         
         setPrompt("");
-        const form = document.querySelector('form'); // This is a bit brittle, but works for now.
+        const form = document.querySelector('form');
         if (form) {
             const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
             if (fileInput) fileInput.value = "";
             const textarea = form.querySelector('textarea');
             if(textarea) {
-              textarea.style.height = 'auto'; // Reset height
+              textarea.style.height = 'auto'; 
             }
         }
         
@@ -682,5 +680,3 @@ function Home() {
 }
 
 export default Home;
-
-    
