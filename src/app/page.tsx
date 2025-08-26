@@ -99,7 +99,7 @@ const WelcomeScreen = ({ formRef, handleFormSubmit, fileInputRef, handleFileChan
        </div>
      </main>
      <footer className="text-center p-4 text-xs text-muted-foreground">
-       by Bissu
+       Created by Bissu
      </footer>
    </div>
 );
@@ -376,7 +376,7 @@ export default function Home() {
             <CrowLogo className="w-8 h-8"/>
             <div>
               <h1 className="text-lg font-bold leading-none">AeonAI</h1>
-              <p className="text-xs text-muted-foreground">by Bissu</p>
+              <p className="text-xs text-muted-foreground">Created by Bissu</p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
