@@ -48,10 +48,10 @@ function SubmitButton() {
   );
 }
 
-function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, handleKeyDown }) {
+function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, textareaRef, prompt, setPrompt, isRecording, handleMicClick, uploadedImagePreview, handleRemoveImage, formAction }) {
     const welcomeFormRef = useRef<HTMLFormElement>(null);
 
-    const handleLocalKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim()) {
         event.preventDefault();
         welcomeFormRef.current?.requestSubmit();
@@ -86,7 +86,7 @@ function WelcomeScreen({ handleFormSubmit, fileInputRef, handleFileChange, texta
                         autoComplete="off"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={handleLocalKeyDown}
+                        onKeyDown={handleKeyDown}
                         className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 resize-none max-h-48"
                         rows={1}
                     />
@@ -125,6 +125,7 @@ export default function Home() {
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState('dark');
   const [isRecording, setIsRecording] = useState(false);
+  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
 
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -162,6 +163,8 @@ export default function Home() {
         title: "Error",
         description: state.error,
       });
+       setMessages(prev => prev.slice(0, -1));
+
     } else if (state.response || state.imageUrl || (state.sources && state.sources.length > 0)) {
        const newAiMessage: Message = { 
         id: Date.now(), 
@@ -364,7 +367,7 @@ export default function Home() {
       handleMicClick={handleMicClick}
       uploadedImagePreview={uploadedImagePreview}
       handleRemoveImage={handleRemoveImage}
-      handleKeyDown={handleKeyDown}
+      formAction={formAction}
     />;
   }
 
@@ -557,3 +560,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
