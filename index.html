@@ -5,8 +5,18 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Your Site Title</title>
 
-    <!-- This line tells the browser to use the favicon file at /favicon.ico -->
-    <link rel="icon" href="/favicon.ico" />
+    <!-- ✅ Favicon setup -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" sizes="96x96" href="/favicon-96x96.png" />
+
+    <!-- Apple devices -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Android / PWA -->
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" sizes="192x192" href="/web-app-manifest-192x192.png" />
+    <link rel="icon" sizes="512x512" href="/web-app-manifest-512x512.png" />
   </head>
   <body>
     <h1>Hello</h1>
