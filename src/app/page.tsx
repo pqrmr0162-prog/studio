@@ -55,17 +55,15 @@ const WelcomeView = ({ setPrompt, formRef }) => {
       }
     };
   return (
-    <div className="h-screen flex flex-col">
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
+    <div className="h-screen flex flex-col items-center justify-center text-center px-4">
+      <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex items-center gap-4 mb-6">
             <CrowLogo className="w-16 h-16 text-primary" />
             <h1 className="text-6xl font-semibold">AeonAI</h1>
         </div>
         <h2 className="text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
         
-      </main>
-      <footer className="p-4 z-10 w-full flex flex-col items-center gap-4">
-         <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto">
             <div className="relative flex items-center gap-2 rounded-full bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
                 <Button variant="ghost" size="icon" className="shrink-0">
                     <Paperclip className="h-5 w-5" />
@@ -78,7 +76,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
                     value={prompt}
                     onChange={(e) => setLocalPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 placeholder:text-sm"
                     disabled={pending}
                 />
                  <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
@@ -88,6 +86,8 @@ const WelcomeView = ({ setPrompt, formRef }) => {
                 <SubmitButton disabled={!prompt.trim()}/>
             </div>
         </div>
+      </main>
+      <footer className="p-4 z-10 w-full flex flex-col items-center gap-4">
         <p className="text-sm text-muted-foreground/50">Developed by Bissu</p>
       </footer>
     </div>
@@ -206,14 +206,20 @@ const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
     const [theme, setTheme] = useState('dark');
     
     useEffect(() => {
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        setTheme(isDarkMode ? 'dark' : 'light');
+        const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(storedTheme);
+        if (storedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     }, []);
 
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
         if (newTheme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
@@ -277,10 +283,6 @@ function Home() {
             setPrompt(""); 
         }
     }, [state, toast]);
-
-    useEffect(() => {
-        document.documentElement.classList.add('dark');
-    }, []);
 
     const handleFormAction = (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
