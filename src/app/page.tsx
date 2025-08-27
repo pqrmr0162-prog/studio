@@ -219,10 +219,7 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
         
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
-            // Directly set the prompt and submit the form
             setPrompt(suggestion);
-            // We need to trigger form submission in the next render cycle
-            // for the prompt state to update before submission.
             setTimeout(() => {
                 if (formRef.current) {
                     const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -248,7 +245,7 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
 
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 border-b">
+            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -522,7 +519,6 @@ function AppContent({ state, formAction }) {
                 return newMessages;
             });
         } else {
-            // Remove suggestions from all previous messages and add the new one
              setMessages(prev => {
                 const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
                 return [...newMessages, userMessage];
@@ -534,7 +530,6 @@ function AppContent({ state, formAction }) {
         setPrompt("");
         setUploadedImagePreview(null);
         if (formRef.current) {
-            // Also reset the file input
             const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
             if(fileInput) fileInput.value = "";
         }
@@ -543,7 +538,6 @@ function AppContent({ state, formAction }) {
     useEffect(() => {
         if (!state) return;
 
-        // This ref check prevents showing a toast for the initial state.
         if (initialToastShown.current) {
             if (state.error) {
                 toast({
@@ -551,7 +545,6 @@ function AppContent({ state, formAction }) {
                     title: "Error",
                     description: state.error,
                 });
-                // If there was an error and we weren't editing, remove the optimistic user message.
                 if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
                     setMessages(prev => prev.slice(0, -1));
                 }
@@ -570,7 +563,6 @@ function AppContent({ state, formAction }) {
                         const newMessages = [...prev];
                         const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                         if (editedMessageIndex !== -1) {
-                            // Replace the placeholder AI message or insert a new one
                             if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
                                 newMessages[editedMessageIndex + 1] = newAiMessage;
                             } else {
@@ -581,12 +573,10 @@ function AppContent({ state, formAction }) {
                     });
                     setEditingMessageId(null);
                 } else {
-                    // Add the new AI message to the end.
                     setMessages((prev) => [...prev, newAiMessage]);
                 }
             }
         } else {
-            // After the first render, set the ref to true.
             initialToastShown.current = true;
         }
 
@@ -630,5 +620,3 @@ function Home() {
 }
 
 export default Home;
-
-    
