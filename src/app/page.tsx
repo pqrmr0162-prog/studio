@@ -65,7 +65,7 @@ const WelcomeFormContent = ({ setPrompt, formRef, uploadedFile, setUploadedFile,
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1 animate-shine")}>
+            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border shadow-lg px-2 py-1 border-primary/50 shadow-primary/20")}>
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -244,7 +244,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
-        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1", isTyping && "animate-shine")}>
+        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1 transition-all", isTyping && "border-primary/50 shadow-primary/20")}>
             <input
                 type="file"
                 ref={fileInputRef}
