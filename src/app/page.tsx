@@ -88,7 +88,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
                 <SubmitButton disabled={!prompt.trim()}/>
             </div>
         </div>
-        <p className="text-sm text-muted-foreground/50">Created by Bissu</p>
+        <p className="text-sm text-muted-foreground/50">Developed by Bissu</p>
       </footer>
     </div>
   );
@@ -301,5 +301,7 @@ function Home() {
 }
 
 export default Home;
+
+    
 
     
