@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useLayoutEffect } from "react";
@@ -6,23 +5,15 @@ import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { AeonLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal, Mic, Plus, Sun, User, Bot, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Paperclip, Mic, SendHorizonal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-
-interface Message {
-  role: "user" | "ai";
-  content: string;
-  imageUrl?: string | null;
-  sources?: { title: string; url: string }[] | null;
-}
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const initialState = {
   response: null,
@@ -32,7 +23,7 @@ const initialState = {
   error: null,
 };
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+const SubmitButton = ({ disabled }: { disabled: boolean }) => {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full w-10 h-10 bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -48,12 +39,8 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
 const MessageInput = ({ prompt, setPrompt, formRef }) => {
     const { pending } = useFormStatus();
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const recognitionRef = useRef<any>(null);
-    const { toast } = useToast();
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         if (formRef.current) {
@@ -63,205 +50,75 @@ const MessageInput = ({ prompt, setPrompt, formRef }) => {
       }
     };
     
-    const handleMicClick = () => {
-        if (pending) return;
-        
-        if (isRecording) {
-            recognitionRef.current?.stop();
-            return;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            toast({
-                variant: "destructive",
-                title: "Unsupported Browser",
-                description: "Speech recognition is not supported in your browser.",
-            });
-            return;
-        }
-
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-IN';
-
-        recognitionRef.current.onstart = () => {
-            setIsRecording(true);
-        };
-
-        recognitionRef.current.onend = () => {
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            setIsRecording(false);
-            toast({
-                variant: "destructive",
-                title: "Speech Recognition Error",
-                description: event.error,
-            });
-        };
-
-        recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setPrompt(transcript);
-        };
-
-        recognitionRef.current.start();
-    };
-
     return (
-        <div className="w-full max-w-4xl mx-auto">
-            <div className="relative flex items-center gap-2 rounded-full bg-secondary border border-border shadow-sm px-4 py-2">
-                <Textarea
-                    ref={textareaRef}
+        <div className="w-full max-w-2xl mx-auto">
+            <div className="relative flex items-center gap-2 rounded-full bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
+                <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
+                    <Paperclip className="h-5 w-5" />
+                    <span className="sr-only">Attach file</span>
+                </button>
+                <Input
                     name="prompt"
-                    placeholder="Message AeonAI..."
+                    placeholder="Ask about an image or just chat. Try 'generate image of a cat'"
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48 text-base"
-                    rows={1}
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80"
                     disabled={pending}
                 />
-                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full text-muted-foreground" onClick={handleMicClick} disabled={pending}>
+                 <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
                     <Mic className="h-5 w-5" />
                     <span className="sr-only">Use microphone</span>
-                </Button>
+                </button>
                 <SubmitButton disabled={!prompt.trim()}/>
             </div>
         </div>
     );
 };
 
-
-const WelcomeView = ({ setPrompt }) => {
-  const suggestions = [
-    "Explain quantum computing in simple terms",
-    "Got any creative ideas for a 10 year old’s birthday?",
-    "How do I make an HTTP request in Javascript?",
-    "What's the meaning of life?",
-  ];
-
+const WelcomeView = ({ setPrompt, formRef }) => {
+  const [prompt, setLocalPrompt] = useState("");
+  
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setPrompt(prompt);
+    if (formRef.current) {
+      const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submitButton?.click();
+    }
+  };
+  
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center px-4">
-      <div className="mb-8">
-        <AeonLogo className="w-24 h-24 mx-auto" />
-      </div>
-      <h1 className="text-4xl font-bold mb-12">How can I help you today?</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
-        {suggestions.map((s, i) => (
-          <Button key={i} variant="outline" className="h-auto text-left justify-start p-4 bg-secondary hover:bg-white/10 border-border" onClick={() => setPrompt(s)}>
-            {s}
-          </Button>
-        ))}
-      </div>
+    <div className="h-screen flex flex-col">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
+        <div className="flex items-center gap-4 mb-6">
+            <AeonLogo className="w-16 h-16" />
+            <h1 className="text-6xl font-semibold">AeonAI</h1>
+        </div>
+        <h2 className="text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
+      </main>
+      <footer className="p-4 z-10 w-full flex flex-col items-center gap-4">
+          <form onSubmit={handleFormSubmit} className="w-full contents">
+             <MessageInput prompt={prompt} setPrompt={setLocalPrompt} formRef={formRef} />
+          </form>
+          <p className="text-sm text-muted-foreground/50">Created by Bissu</p>
+      </footer>
     </div>
   );
 };
 
-
-const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean }) => {
-    const viewportRef = useRef<HTMLDivElement>(null);
-
-    useLayoutEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-        }
-    }, [messages, pending]);
-
-    return (
-        <ScrollArea className="flex-1 w-full" viewportRef={viewportRef}>
-            <div className="max-w-4xl mx-auto p-4 space-y-8">
-                {messages.map((message, index) => (
-                    <div key={index} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                        {message.role === 'ai' && (
-                            <Avatar className="w-8 h-8 border-none">
-                                <AvatarFallback className="bg-transparent text-primary"><AeonLogo className="w-8 h-8" /></AvatarFallback>
-                            </Avatar>
-                        )}
-                        <div className={`flex flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                             <div className={`max-w-xl rounded-2xl px-4 py-3 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                                {message.imageUrl ? (
-                                    <img src={message.imageUrl} alt="Generated" className="rounded-md" />
-                                ) : (
-                                    <div className="prose prose-sm dark:prose-invert max-w-none text-base">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {message.content}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
-                            </div>
-                            {message.sources && message.sources.length > 0 && (
-                                <div className="flex gap-2 flex-wrap">
-                                    {message.sources.map((source, i) => (
-                                        <a key={i} href={source.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary underline">
-                                            {source.title}
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {message.role === 'user' && (
-                             <Avatar className="w-8 h-8 border bg-secondary">
-                                <AvatarFallback className="bg-secondary text-secondary-foreground"><User size={20} /></AvatarFallback>
-                            </Avatar>
-                        )}
-                    </div>
-                ))}
-                {pending && (
-                     <div className="flex items-start gap-4">
-                        <Avatar className="w-8 h-8 border-none">
-                            <AvatarFallback className="bg-transparent text-primary"><AeonLogo className="w-8 h-8" /></AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col gap-2 w-full max-w-xl">
-                           <div className="bg-secondary rounded-2xl px-4 py-3 w-full">
-                              <Skeleton className="h-5 w-full" />
-                              <Skeleton className="h-5 w-3/4 mt-2" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </ScrollArea>
-    );
+// ... a placeholder ChatView in case we need it later
+const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) => {
+    return <div></div>;
 };
 
-const Header = ({ onNewChat }) => {
-  return (
-    <header className="p-4 flex justify-between items-center w-full border-b border-border">
-      <div className="flex items-center gap-2">
-        <AeonLogo className="w-8 h-8" />
-        <div>
-          <h1 className="text-lg font-semibold">AeonAI</h1>
-          <p className="text-xs text-muted-foreground">Developed by Bissu</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon">
-          <Sun className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" onClick={onNewChat}>
-          <Plus className="h-5 w-5 mr-2" />
-          New Chat
-        </Button>
-         <Avatar className="w-8 h-8 border bg-secondary">
-            <AvatarFallback className="bg-secondary text-secondary-foreground"><User size={20} /></AvatarFallback>
-        </Avatar>
-      </div>
-    </header>
-  );
-};
-
-
-function AppContent({ state, formAction }) {
+function Home() {
+    const [state, formAction] = useActionState(getAiResponse, initialState);
     const formRef = useRef<HTMLFormElement>(null);
     const { toast } = useToast();
     const [prompt, setPrompt] = useState("");
-    const [messages, setMessages] = useState<Message[]>([]);
-    const { pending } = useFormStatus();
+    const [messages, setMessages] = useState<any[]>([]); // Will be used later
 
     useEffect(() => {
         if (state?.error) {
@@ -272,78 +129,35 @@ function AppContent({ state, formAction }) {
             });
         }
     }, [state?.error, toast]);
-
-    const handleFormAction = async (formData: FormData) => {
-        const currentPrompt = formData.get("prompt") as string;
-        const file = formData.get("uploadedFile") as File;
-
-        if (!currentPrompt?.trim() && (!file || file.size === 0)) {
-            return;
-        }
-
-        setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
-        setPrompt("");
-        
-        // Reset file input if you have one
-        if (formRef.current) {
-            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) {
-                fileInput.value = "";
-            }
-        }
-
-        formAction(formData);
-    };
     
+    // This effect will be used to switch to chat view
     useEffect(() => {
-        if(state?.response || state?.imageUrl) {
-            setMessages(prev => [...prev, { 
-                role: 'ai', 
-                content: state.response ?? "",
-                imageUrl: state.imageUrl,
-                sources: state.sources,
-             }]);
+        if (prompt) { // A simple way to detect when to switch view
+            formRef.current?.requestSubmit();
         }
-    }, [state?.response, state?.imageUrl, state?.sources]);
-
+    }, [prompt]);
 
     useLayoutEffect(() => {
         document.documentElement.classList.add('dark');
-        document.body.classList.add('bg-background');
     }, []);
-    
-    const handleNewChat = () => {
-        setMessages([]);
-        // Potentially reset form state as well if needed
+
+    const handleFormAction = async (formData: FormData) => {
+        // This will be properly implemented later to handle chat messages
+        const currentPrompt = formData.get("prompt") as string;
+        if (!currentPrompt) return;
+        setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
+        formAction(formData);
     };
 
     return (
         <form ref={formRef} action={handleFormAction} className="contents">
-            <div className="h-screen flex flex-col bg-background text-foreground">
-                <Header onNewChat={handleNewChat} />
-                <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-                    {messages.length === 0 && !pending ? (
-                        <WelcomeView setPrompt={setPrompt} />
-                    ) : (
-                        <ChatView messages={messages} pending={pending} />
-                    )}
-                </main>
-                <footer className="p-4 border-t border-border z-10 w-full flex justify-center">
-                    <MessageInput 
-                        prompt={prompt} 
-                        setPrompt={setPrompt} 
-                        formRef={formRef}
-                    />
-                </footer>
-            </div>
+            {messages.length === 0 ? (
+                <WelcomeView setPrompt={setPrompt} formRef={formRef} />
+            ) : (
+                <ChatView messages={messages} pending={false} />
+            )}
         </form>
     );
-}
-
-function Home() {
-    const [state, formAction] = useActionState(getAiResponse, initialState);
-    
-    return <AppContent state={state} formAction={formAction} />;
 }
 
 export default Home;
