@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useCallback, useTransition, useLayoutEffect } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition, useLayoutEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -57,23 +57,22 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
 
-    const adjustTextareaHeight = useCallback(() => {
+    const adjustTextareaHeight = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    }, []);
+    };
 
     useEffect(() => {
         adjustTextareaHeight();
         window.addEventListener('resize', adjustTextareaHeight);
         return () => window.removeEventListener('resize', adjustTextareaHeight);
-    }, [adjustTextareaHeight, prompt]);
+    }, [prompt]);
     
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && (prompt.trim() || uploadedImagePreview) && !pending) {
         event.preventDefault();
-        // Trigger the form submission by programmatically clicking the submit button
         if (formRef.current) {
           const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
           submitButton?.click();
@@ -184,36 +183,7 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     );
 };
 
-
-const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
-    return (
-        <div className="flex flex-col h-screen bg-background p-4 md:p-6 lg:p-8">
-            <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                <div className="w-full max-w-2xl">
-                    <div className="flex flex-col items-center justify-center gap-2 mb-4">
-                        <CrowLogo className="w-28 h-28 sm:w-32 sm:h-32"/>
-                        <h1 className="text-3xl sm:text-4xl font-bold">AeonAI</h1>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">How can I help you today?</h2>
-                    <div className="mt-8 w-full">
-                       <MessageInput 
-                          prompt={prompt} 
-                          setPrompt={setPrompt} 
-                          formRef={formRef} 
-                          uploadedImagePreview={uploadedImagePreview}
-                          setUploadedImagePreview={setUploadedImagePreview}
-                        />
-                    </div>
-                </div>
-            </main>
-            <footer className="text-center p-4 text-xs text-muted-foreground">
-                Developed by Bissu
-            </footer>
-        </div>
-    );
-};
-
-const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview, onFormSubmit }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     
@@ -239,9 +209,6 @@ const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMes
         
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
-            
-            // We can't use `formRef.current.requestSubmit()` because we're not inside the form.
-            // So, we'll manually call the `onFormSubmit` function with the suggestion.
             const formData = new FormData();
             formData.append('prompt', suggestion);
             onFormSubmit(formData);
@@ -420,6 +387,7 @@ function AppContent({ state, formAction }) {
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const initialToastShown = useRef(false);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
@@ -460,43 +428,48 @@ function AppContent({ state, formAction }) {
     useEffect(() => {
         if (!state) return;
 
-        if (state.error) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: state.error,
-            });
-            if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
-                setMessages(prev => prev.slice(0, -1));
-            }
-        } else if (state.response || state.imageUrl) {
-            const newAiMessage: Message = {
-                id: Date.now(),
-                sender: 'ai',
-                text: state.response || "",
-                imageUrl: state.imageUrl || undefined,
-                suggestions: state.suggestions || undefined,
-                sources: state.sources || undefined,
-            };
-
-            if (editingMessageId !== null) {
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                    if (editedMessageIndex !== -1) {
-                        if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
-                            newMessages[editedMessageIndex + 1] = newAiMessage;
-                        } else {
-                            newMessages.splice(editedMessageIndex + 1, 0, newAiMessage);
-                        }
-                    }
-                    return newMessages;
+        if (initialToastShown.current) {
+            if (state.error) {
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: state.error,
                 });
-                setEditingMessageId(null);
-            } else {
-                setMessages((prev) => [...prev, newAiMessage]);
+                if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
+                    setMessages(prev => prev.slice(0, -1));
+                }
+            } else if (state.response || state.imageUrl) {
+                const newAiMessage: Message = {
+                    id: Date.now(),
+                    sender: 'ai',
+                    text: state.response || "",
+                    imageUrl: state.imageUrl || undefined,
+                    suggestions: state.suggestions || undefined,
+                    sources: state.sources || undefined,
+                };
+
+                if (editingMessageId !== null) {
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                        if (editedMessageIndex !== -1) {
+                            if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
+                                newMessages[editedMessageIndex + 1] = newAiMessage;
+                            } else {
+                                newMessages.splice(editedMessageIndex + 1, 0, newAiMessage);
+                            }
+                        }
+                        return newMessages;
+                    });
+                    setEditingMessageId(null);
+                } else {
+                    setMessages((prev) => [...prev, newAiMessage]);
+                }
             }
+        } else {
+            initialToastShown.current = true;
         }
+
     }, [state, toast, editingMessageId, messages]);
 
     useEffect(() => {
@@ -507,7 +480,6 @@ function AppContent({ state, formAction }) {
             });
         }
     }, [messages, isPending]);
-
 
     const handleFormSubmit = (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
