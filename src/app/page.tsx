@@ -73,7 +73,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
                 </Button>
                 <Input
                     name="prompt"
-                    placeholder="Ask about an image or just chat. Try 'generate image of a cat'"
+                    placeholder="Ask about image or just chat......."
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setLocalPrompt(e.target.value)}
