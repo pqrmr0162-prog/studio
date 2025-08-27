@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useLayoutEffect } from "react";
@@ -186,7 +187,6 @@ const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
     const [theme, setTheme] = useState('dark');
     
     useEffect(() => {
-        // On mount, set the theme based on the class on the html element
         const isDarkMode = document.documentElement.classList.contains('dark');
         setTheme(isDarkMode ? 'dark' : 'light');
     }, []);
@@ -207,7 +207,10 @@ const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
             <header className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-3">
                     <AeonLogo className="w-7 h-7" />
-                    <span className="text-xl font-semibold">AeonAI Assistant</span>
+                    <div>
+                        <h1 className="text-xl font-semibold">AeonAI Assistant</h1>
+                        <p className="text-xs text-muted-foreground">Developed by Bissu</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
@@ -252,7 +255,7 @@ function Home() {
                 sources: state.sources,
                 suggestions: state.suggestions,
             }]);
-            setPrompt(""); // Clear input after AI response
+            setPrompt(""); 
         }
     }, [state, toast]);
 
