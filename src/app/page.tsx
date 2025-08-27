@@ -7,7 +7,7 @@ import { getAiResponse } from "@/app/actions";
 import { AeonLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal, Mic, Paperclip, User, Bot } from "lucide-react";
+import { SendHorizonal, Mic, Plus, Sun, User, Bot, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
 import ReactMarkdown from "react-markdown";
@@ -35,7 +35,7 @@ const initialState = {
 function SubmitButton({ disabled }: { disabled: boolean }) {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full w-10 h-10 bg-primary">
+        <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full w-10 h-10 bg-primary hover:bg-primary/90 text-primary-foreground">
             {pending ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current"></div>
             ) : (
@@ -49,7 +49,6 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 const MessageInput = ({ prompt, setPrompt, formRef }) => {
     const { pending } = useFormStatus();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isRecording, setIsRecording] = useState(false);
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
@@ -64,13 +63,6 @@ const MessageInput = ({ prompt, setPrompt, formRef }) => {
       }
     };
     
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            toast({ title: `File "${file.name}" attached.`});
-        }
-    };
-
     const handleMicClick = () => {
         if (pending) return;
         
@@ -120,27 +112,21 @@ const MessageInput = ({ prompt, setPrompt, formRef }) => {
     };
 
     return (
-        <div className="w-full">
-            <div className="relative flex items-center gap-2 md:gap-4 px-3 py-2 rounded-full bg-secondary border shadow-sm max-w-2xl mx-auto">
-                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                    <Paperclip className="h-5 w-5" />
-                    <span className="sr-only">Upload file</span>
-                </Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} name="uploadedFile" accept="image/*,application/pdf,.txt,.md" className="hidden" disabled={pending} />
-
+        <div className="w-full max-w-4xl mx-auto">
+            <div className="relative flex items-center gap-2 rounded-full bg-secondary border border-border shadow-sm px-4 py-2">
                 <Textarea
                     ref={textareaRef}
                     name="prompt"
-                    placeholder="Ask about an image or just chat. Try 'generate image of a cat'"
+                    placeholder="Message AeonAI..."
                     autoComplete="off"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 resize-none max-h-48 text-base"
                     rows={1}
                     disabled={pending}
                 />
-                <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={handleMicClick} disabled={pending}>
+                 <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full text-muted-foreground" onClick={handleMicClick} disabled={pending}>
                     <Mic className="h-5 w-5" />
                     <span className="sr-only">Use microphone</span>
                 </Button>
@@ -150,17 +136,32 @@ const MessageInput = ({ prompt, setPrompt, formRef }) => {
     );
 };
 
-const WelcomeView = ({ onSuggestionClick }) => {
+
+const WelcomeView = ({ setPrompt }) => {
+  const suggestions = [
+    "Explain quantum computing in simple terms",
+    "Got any creative ideas for a 10 year old’s birthday?",
+    "How do I make an HTTP request in Javascript?",
+    "What's the meaning of life?",
+  ];
+
   return (
-      <div className="flex flex-col items-center justify-center h-full text-center px-4">
-        <div className="flex items-center gap-4 mb-4">
-            <AeonLogo className="w-12 h-12" />
-            <h1 className="text-5xl font-bold">AeonAI</h1>
-        </div>
-        <h2 className="text-3xl font-semibold text-muted-foreground mb-12">How can I help you today?</h2>
+    <div className="flex flex-col items-center justify-center h-full text-center px-4">
+      <div className="mb-8">
+        <AeonLogo className="w-24 h-24 mx-auto" />
       </div>
+      <h1 className="text-4xl font-bold mb-12">How can I help you today?</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+        {suggestions.map((s, i) => (
+          <Button key={i} variant="outline" className="h-auto text-left justify-start p-4 bg-secondary hover:bg-white/10 border-border" onClick={() => setPrompt(s)}>
+            {s}
+          </Button>
+        ))}
+      </div>
+    </div>
   );
 };
+
 
 const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean }) => {
     const viewportRef = useRef<HTMLDivElement>(null);
@@ -173,28 +174,26 @@ const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean
 
     return (
         <ScrollArea className="flex-1 w-full" viewportRef={viewportRef}>
-            <div className="max-w-4xl mx-auto p-4 space-y-6">
+            <div className="max-w-4xl mx-auto p-4 space-y-8">
                 {messages.map((message, index) => (
                     <div key={index} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
                         {message.role === 'ai' && (
-                            <Avatar className="w-8 h-8 border">
-                                <AvatarFallback><Bot size={20} /></AvatarFallback>
+                            <Avatar className="w-8 h-8 border-none">
+                                <AvatarFallback className="bg-transparent text-primary"><AeonLogo className="w-8 h-8" /></AvatarFallback>
                             </Avatar>
                         )}
                         <div className={`flex flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                            <Card className={`max-w-xl ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                                <CardContent className="p-3">
-                                    {message.imageUrl ? (
-                                        <img src={message.imageUrl} alt="Generated" className="rounded-md" />
-                                    ) : (
-                                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                {message.content}
-                                            </ReactMarkdown>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                             <div className={`max-w-xl rounded-2xl px-4 py-3 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                                {message.imageUrl ? (
+                                    <img src={message.imageUrl} alt="Generated" className="rounded-md" />
+                                ) : (
+                                    <div className="prose prose-sm dark:prose-invert max-w-none text-base">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                )}
+                            </div>
                             {message.sources && message.sources.length > 0 && (
                                 <div className="flex gap-2 flex-wrap">
                                     {message.sources.map((source, i) => (
@@ -206,20 +205,22 @@ const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean
                             )}
                         </div>
                         {message.role === 'user' && (
-                            <Avatar className="w-8 h-8 border">
-                                <AvatarFallback><User size={20} /></AvatarFallback>
+                             <Avatar className="w-8 h-8 border bg-secondary">
+                                <AvatarFallback className="bg-secondary text-secondary-foreground"><User size={20} /></AvatarFallback>
                             </Avatar>
                         )}
                     </div>
                 ))}
                 {pending && (
                      <div className="flex items-start gap-4">
-                        <Avatar className="w-8 h-8 border">
-                            <AvatarFallback><Bot size={20} /></AvatarFallback>
+                        <Avatar className="w-8 h-8 border-none">
+                            <AvatarFallback className="bg-transparent text-primary"><AeonLogo className="w-8 h-8" /></AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col gap-2 w-full max-w-xl">
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-3/4" />
+                           <div className="bg-secondary rounded-2xl px-4 py-3 w-full">
+                              <Skeleton className="h-5 w-full" />
+                              <Skeleton className="h-5 w-3/4 mt-2" />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -227,6 +228,33 @@ const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean
         </ScrollArea>
     );
 };
+
+const Header = ({ onNewChat }) => {
+  return (
+    <header className="p-4 flex justify-between items-center w-full border-b border-border">
+      <div className="flex items-center gap-2">
+        <AeonLogo className="w-8 h-8" />
+        <div>
+          <h1 className="text-lg font-semibold">AeonAI</h1>
+          <p className="text-xs text-muted-foreground">Developed by Bissu</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon">
+          <Sun className="h-5 w-5" />
+        </Button>
+        <Button variant="ghost" onClick={onNewChat}>
+          <Plus className="h-5 w-5 mr-2" />
+          New Chat
+        </Button>
+         <Avatar className="w-8 h-8 border bg-secondary">
+            <AvatarFallback className="bg-secondary text-secondary-foreground"><User size={20} /></AvatarFallback>
+        </Avatar>
+      </div>
+    </header>
+  );
+};
+
 
 function AppContent({ state, formAction }) {
     const formRef = useRef<HTMLFormElement>(null);
@@ -247,12 +275,22 @@ function AppContent({ state, formAction }) {
 
     const handleFormAction = async (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
-        if (!currentPrompt?.trim()) {
+        const file = formData.get("uploadedFile") as File;
+
+        if (!currentPrompt?.trim() && (!file || file.size === 0)) {
             return;
         }
 
         setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
         setPrompt("");
+        
+        // Reset file input if you have one
+        if (formRef.current) {
+            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = "";
+            }
+        }
 
         formAction(formData);
     };
@@ -271,39 +309,41 @@ function AppContent({ state, formAction }) {
 
     useLayoutEffect(() => {
         document.documentElement.classList.add('dark');
+        document.body.classList.add('bg-background');
     }, []);
-
+    
+    const handleNewChat = () => {
+        setMessages([]);
+        // Potentially reset form state as well if needed
+    };
 
     return (
         <form ref={formRef} action={handleFormAction} className="contents">
-                <div className="h-screen flex flex-col">
-                    <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-                        {messages.length === 0 && !pending ? (
-                            <WelcomeView onSuggestionClick={() => {}} />
-                        ) : (
-                            <ChatView messages={messages} pending={pending} />
-                        )}
-                    </main>
-                    <footer className="p-4 bg-transparent z-10 w-full">
-                        <MessageInput 
-                            prompt={prompt} 
-                            setPrompt={setPrompt} 
-                            formRef={formRef}
-                        />
-                        <p className="text-center text-xs text-muted-foreground mt-4">Created by Bissu</p>
-                    </footer>
-                </div>
+            <div className="h-screen flex flex-col bg-background text-foreground">
+                <Header onNewChat={handleNewChat} />
+                <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+                    {messages.length === 0 && !pending ? (
+                        <WelcomeView setPrompt={setPrompt} />
+                    ) : (
+                        <ChatView messages={messages} pending={pending} />
+                    )}
+                </main>
+                <footer className="p-4 border-t border-border z-10 w-full flex justify-center">
+                    <MessageInput 
+                        prompt={prompt} 
+                        setPrompt={setPrompt} 
+                        formRef={formRef}
+                    />
+                </footer>
+            </div>
         </form>
     );
 }
 
 function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
-    const { pending } = useFormStatus();
     
     return <AppContent state={state} formAction={formAction} />;
 }
 
 export default Home;
-
-    

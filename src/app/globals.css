@@ -32,10 +32,10 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
   .dark {
-    --background: 240 4% 6%;
+    --background: 0 0% 0%;
     --foreground: 210 40% 98%;
     --card: 240 4% 10%;
     --card-foreground: 210 40% 98%;
@@ -43,16 +43,16 @@ body {
     --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 240 4% 16%;
+    --secondary: 240 4% 10%;
     --secondary-foreground: 210 40% 98%;
     --muted: 240 4% 16%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 240 4% 16%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 51%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 20%;
-    --input: 240 4% 20%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
     --ring: 217 91% 60%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -69,14 +69,6 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-}
-
-.user-message {
-    @apply bg-primary text-primary-foreground;
-}
-
-.ai-message {
-    @apply bg-secondary text-secondary-foreground;
 }
 
 html {
