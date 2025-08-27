@@ -243,16 +243,9 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
 
     const chatActions = useChatActions();
 
-    const ChatEmptyState = () => (
-      <div className="flex flex-col items-center justify-center h-full text-center -mt-16">
-        <CrowLogo className="w-16 h-16 mb-4" />
-        <h2 className="text-2xl font-bold">How can I help you today?</h2>
-      </div>
-    );
-
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4">
+            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 border-b">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -277,109 +270,105 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
             <main className="flex-1 overflow-y-auto">
                 <ScrollArea className="h-full" viewportRef={viewportRef}>
                   <div className="space-y-6 max-w-4xl mx-auto w-full p-2 sm:p-6 pb-24 md:pb-32">
-                    {messages.length === 0 && !pending ? (
-                        <ChatEmptyState />
-                    ) : (
-                        messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className={cn(
-                                "flex flex-col",
-                                message.sender === 'user' ? "items-end" : "items-start"
-                                )}
-                            >
-                                {message.sender === 'ai' && message.sources && message.sources.length > 0 && (
-                                <div className="flex flex-col items-start gap-2 mb-2 ml-12">
-                                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                                        <LinkIcon size={14} />
-                                        Sources
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {message.sources.map((source, index) => (
-                                            <Button key={index} variant="outline" size="sm" asChild className="text-xs">
-                                                <Link href={source.url} target="_blank" rel="noopener noreferrer">
-                                                    {source.title}
-                                                </Link>
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </div>
-                                )}
-                                <div className={cn(
-                                "group flex items-start gap-2 sm:gap-4 w-full",
-                                message.sender === 'user' && "justify-end"
-                                )}>
-                                {message.sender === 'ai' && (
-                                    <Avatar className="w-8 h-8 border shrink-0">
-                                    <AvatarFallback><CrowLogo/></AvatarFallback>
-                                    </Avatar>
-                                )}
-                                {message.sender === 'user' && message.text && (
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => chatActions.handleEdit(message)}>
-                                            <Pencil size={16}/>
+                    {messages.map((message) => (
+                        <div
+                            key={message.id}
+                            className={cn(
+                            "flex flex-col",
+                            message.sender === 'user' ? "items-end" : "items-start"
+                            )}
+                        >
+                            {message.sender === 'ai' && message.sources && message.sources.length > 0 && (
+                            <div className="flex flex-col items-start gap-2 mb-2 ml-12">
+                                <h3 className="text-sm font-semibold flex items-center gap-2">
+                                    <LinkIcon size={14} />
+                                    Sources
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {message.sources.map((source, index) => (
+                                        <Button key={index} variant="outline" size="sm" asChild className="text-xs">
+                                            <Link href={source.url} target="_blank" rel="noopener noreferrer">
+                                                {source.title}
+                                            </Link>
                                         </Button>
-                                    </div>
-                                )}
-                                <div
-                                    className={cn(
-                                    "max-w-[85%] rounded-2xl px-3 sm:px-4 py-3 text-sm prose dark:prose-invert prose-p:my-0",
-                                    message.sender === 'user' ? "user-message" : "ai-message"
-                                    )}
-                                >
-                                    {message.imageUrl && (
-                                    <div className="relative aspect-square not-prose my-2">
-                                        <Image
-                                            src={message.imageUrl}
-                                            alt={message.text || "Generated or uploaded image"}
-                                            fill
-                                            className="rounded-lg object-cover"
-                                        />
-                                    </div>
-                                    )}
-                                    
-                                    {message.text && (
-                                    message.sender === 'ai' ? (
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {message.text}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        <p className="whitespace-pre-wrap">{message.text}</p>
-                                    )
-                                    )}
-                                </div>
-                                {message.sender === 'ai' && message.text && (
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => chatActions.handleCopy(message.text)}>
-                                            <Copy size={16}/>
-                                        </Button>
-                                    </div>
-                                )}
-                                {message.sender === 'user' && (
-                                    <Avatar className="w-8 h-8 border shrink-0">
-                                    <AvatarFallback><User size={16}/></AvatarFallback>
-                                    </Avatar>
-                                )}
-                                </div>
-                                {message.sender === 'ai' && message.suggestions && (
-                                <div className="flex flex-wrap gap-2 mt-2 ml-12">
-                                    {message.suggestions.map((suggestion, index) => (
-                                    <Button
-                                        key={index}
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => chatActions.handleSuggestionClick(suggestion)}
-                                        className="text-xs"
-                                        disabled={pending}
-                                    >
-                                        {suggestion}
-                                    </Button>
                                     ))}
                                 </div>
+                            </div>
+                            )}
+                            <div className={cn(
+                            "group flex items-start gap-2 sm:gap-4 w-full",
+                            message.sender === 'user' && "justify-end"
+                            )}>
+                            {message.sender === 'ai' && (
+                                <Avatar className="w-8 h-8 border shrink-0">
+                                <AvatarFallback><CrowLogo/></AvatarFallback>
+                                </Avatar>
+                            )}
+                            {message.sender === 'user' && message.text && (
+                                <div className="flex items-center gap-2">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => chatActions.handleEdit(message)}>
+                                        <Pencil size={16}/>
+                                    </Button>
+                                </div>
+                            )}
+                            <div
+                                className={cn(
+                                "max-w-[85%] rounded-2xl px-3 sm:px-4 py-3 text-sm prose dark:prose-invert prose-p:my-0",
+                                message.sender === 'user' ? "user-message" : "ai-message"
+                                )}
+                            >
+                                {message.imageUrl && (
+                                <div className="relative aspect-square not-prose my-2">
+                                    <Image
+                                        src={message.imageUrl}
+                                        alt={message.text || "Generated or uploaded image"}
+                                        fill
+                                        className="rounded-lg object-cover"
+                                    />
+                                </div>
+                                )}
+                                
+                                {message.text && (
+                                message.sender === 'ai' ? (
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {message.text}
+                                    </ReactMarkdown>
+                                ) : (
+                                    <p className="whitespace-pre-wrap">{message.text}</p>
+                                )
                                 )}
                             </div>
-                        ))
-                    )}
+                            {message.sender === 'ai' && message.text && (
+                                <div className="flex items-center gap-2">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => chatActions.handleCopy(message.text)}>
+                                        <Copy size={16}/>
+                                    </Button>
+                                </div>
+                            )}
+                            {message.sender === 'user' && (
+                                <Avatar className="w-8 h-8 border shrink-0">
+                                <AvatarFallback><User size={16}/></AvatarFallback>
+                                </Avatar>
+                            )}
+                            </div>
+                            {message.sender === 'ai' && message.suggestions && (
+                            <div className="flex flex-wrap gap-2 mt-2 ml-12">
+                                {message.suggestions.map((suggestion, index) => (
+                                <Button
+                                    key={index}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => chatActions.handleSuggestionClick(suggestion)}
+                                    className="text-xs"
+                                    disabled={pending}
+                                >
+                                    {suggestion}
+                                </Button>
+                                ))}
+                            </div>
+                            )}
+                        </div>
+                    ))}
                     {pending && (
                       <div className="flex items-start gap-2 sm:gap-4">
                           <Avatar className="w-8 h-8 border shrink-0">
@@ -407,6 +396,39 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
         </div>
       );
 };
+
+const WelcomeView = ({ onSuggestionClick }) => {
+  const { pending } = useFormStatus();
+
+  const suggestions = [
+      "Explain the latest advancements in AI",
+      "Draft a professional email to my boss",
+      "Create a 3-day itinerary for a trip to Goa",
+      "What are the best Indian street foods to try?",
+  ];
+
+  return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+        <CrowLogo className="w-20 h-20 mb-4" />
+        <h1 className="text-4xl font-bold mb-2">AeonAI</h1>
+        <p className="text-lg text-muted-foreground mb-8">How can I help you today?</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
+            {suggestions.map((suggestion, index) => (
+                <Button
+                    key={index}
+                    variant="outline"
+                    className="h-auto text-left justify-start p-4"
+                    onClick={() => onSuggestionClick(suggestion)}
+                    disabled={pending}
+                >
+                    {suggestion}
+                </Button>
+            ))}
+        </div>
+      </div>
+  );
+};
+
 
 function AppContent({ state, formAction }) {
     const { toast } = useToast();
@@ -526,22 +548,57 @@ function AppContent({ state, formAction }) {
 
     }, [state, toast, editingMessageId, messages]);
 
+    const handleWelcomeSuggestionClick = (suggestion: string) => {
+        setPrompt(suggestion);
+        setTimeout(() => {
+          if (formRef.current) {
+            const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
+            submitButton?.click();
+          }
+        }, 0);
+    };
 
     return (
         <form ref={formRef} action={handleFormSubmit} className="contents">
-            <ChatView
-                messages={messages}
-                setMessages={setMessages}
-                editingMessageId={editingMessageId}
-                setEditingMessageId={setEditingMessageId}
-                theme={theme}
-                toggleTheme={toggleTheme}
-                prompt={prompt}
-                setPrompt={setPrompt}
-                formRef={formRef}
-                uploadedImagePreview={uploadedImagePreview}
-                setUploadedImagePreview={setUploadedImagePreview}
-            />
+            {messages.length === 0 ? (
+                <div className="h-screen flex flex-col">
+                    <header className="flex items-center shrink-0 gap-4 p-4 ml-auto">
+                        <Button onClick={toggleTheme} variant="ghost" size="icon">
+                            {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
+                            <span className="sr-only">Toggle theme</span>
+                        </Button>
+                         <Avatar className="w-8 h-8 border">
+                            <AvatarFallback><User size={16}/></AvatarFallback>
+                        </Avatar>
+                    </header>
+                    <main className="flex-1 flex flex-col items-center justify-center p-4 -mt-16">
+                      <WelcomeView onSuggestionClick={handleWelcomeSuggestionClick} />
+                    </main>
+                    <footer className="p-2 sm:p-4 bg-transparent z-10">
+                        <MessageInput 
+                            prompt={prompt} 
+                            setPrompt={setPrompt} 
+                            formRef={formRef}
+                            uploadedImagePreview={uploadedImagePreview}
+                            setUploadedImagePreview={setUploadedImagePreview}
+                        />
+                    </footer>
+                </div>
+            ) : (
+                <ChatView
+                    messages={messages}
+                    setMessages={setMessages}
+                    editingMessageId={editingMessageId}
+                    setEditingMessageId={setEditingMessageId}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    formRef={formRef}
+                    uploadedImagePreview={uploadedImagePreview}
+                    setUploadedImagePreview={setUploadedImagePreview}
+                />
+            )}
         </form>
     );
 }
