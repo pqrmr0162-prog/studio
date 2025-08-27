@@ -7,9 +7,22 @@ import { getAiResponse } from "@/app/actions";
 import { AeonLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal, Mic, Paperclip } from "lucide-react";
+import { SendHorizonal, Mic, Paperclip, User, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface Message {
+  role: "user" | "ai";
+  content: string;
+  imageUrl?: string | null;
+  sources?: { title: string; url: string }[] | null;
+}
 
 const initialState = {
   response: null,
@@ -52,7 +65,6 @@ const MessageInput = ({ prompt, setPrompt, formRef }) => {
     };
     
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        // This is a placeholder for file handling logic.
         const file = event.target.files?.[0];
         if (file) {
             toast({ title: `File "${file.name}" attached.`});
@@ -150,32 +162,127 @@ const WelcomeView = ({ onSuggestionClick }) => {
   );
 };
 
+const ChatView = ({ messages, pending }: { messages: Message[], pending: boolean }) => {
+    const viewportRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (viewportRef.current) {
+            viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+        }
+    }, [messages, pending]);
+
+    return (
+        <ScrollArea className="flex-1 w-full" viewportRef={viewportRef}>
+            <div className="max-w-4xl mx-auto p-4 space-y-6">
+                {messages.map((message, index) => (
+                    <div key={index} className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                        {message.role === 'ai' && (
+                            <Avatar className="w-8 h-8 border">
+                                <AvatarFallback><Bot size={20} /></AvatarFallback>
+                            </Avatar>
+                        )}
+                        <div className={`flex flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                            <Card className={`max-w-xl ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                                <CardContent className="p-3">
+                                    {message.imageUrl ? (
+                                        <img src={message.imageUrl} alt="Generated" className="rounded-md" />
+                                    ) : (
+                                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {message.content}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                            {message.sources && message.sources.length > 0 && (
+                                <div className="flex gap-2 flex-wrap">
+                                    {message.sources.map((source, i) => (
+                                        <a key={i} href={source.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary underline">
+                                            {source.title}
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {message.role === 'user' && (
+                            <Avatar className="w-8 h-8 border">
+                                <AvatarFallback><User size={20} /></AvatarFallback>
+                            </Avatar>
+                        )}
+                    </div>
+                ))}
+                {pending && (
+                     <div className="flex items-start gap-4">
+                        <Avatar className="w-8 h-8 border">
+                            <AvatarFallback><Bot size={20} /></AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col gap-2 w-full max-w-xl">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-3/4" />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </ScrollArea>
+    );
+};
 
 function AppContent({ state, formAction }) {
     const formRef = useRef<HTMLFormElement>(null);
+    const { toast } = useToast();
     const [prompt, setPrompt] = useState("");
-    
-    useLayoutEffect(() => {
-        document.documentElement.classList.add('dark');
-    }, []);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const { pending } = useFormStatus();
 
-    const handleFormSubmit = (formData: FormData) => {
-        // This is a placeholder for form submission. 
-        // In a real app, this would show the chat view.
+    useEffect(() => {
+        if (state?.error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: state.error,
+            });
+        }
+    }, [state?.error, toast]);
+
+    const handleFormAction = async (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
         if (!currentPrompt?.trim()) {
             return;
         }
-        alert(`You submitted: ${currentPrompt}`);
-        // We are not calling formAction(formData) yet to keep the UI simple as requested.
+
+        setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
         setPrompt("");
+
+        formAction(formData);
     };
+    
+    useEffect(() => {
+        if(state?.response || state?.imageUrl) {
+            setMessages(prev => [...prev, { 
+                role: 'ai', 
+                content: state.response ?? "",
+                imageUrl: state.imageUrl,
+                sources: state.sources,
+             }]);
+        }
+    }, [state?.response, state?.imageUrl, state?.sources]);
+
+
+    useLayoutEffect(() => {
+        document.documentElement.classList.add('dark');
+    }, []);
+
 
     return (
-        <form ref={formRef} action={handleFormSubmit} className="contents">
+        <form ref={formRef} action={handleFormAction} className="contents">
                 <div className="h-screen flex flex-col">
-                    <main className="flex-1 flex flex-col items-center justify-center p-4">
-                      <WelcomeView onSuggestionClick={() => {}} />
+                    <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+                        {messages.length === 0 && !pending ? (
+                            <WelcomeView onSuggestionClick={() => {}} />
+                        ) : (
+                            <ChatView messages={messages} pending={pending} />
+                        )}
                     </main>
                     <footer className="p-4 bg-transparent z-10 w-full">
                         <MessageInput 
@@ -192,7 +299,11 @@ function AppContent({ state, formAction }) {
 
 function Home() {
     const [state, formAction] = useActionState(getAiResponse, initialState);
+    const { pending } = useFormStatus();
+    
     return <AppContent state={state} formAction={formAction} />;
 }
 
 export default Home;
+
+    
