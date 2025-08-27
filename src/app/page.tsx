@@ -57,7 +57,7 @@ const WelcomeFormContent = ({ setPrompt, formRef }) => {
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-2">
+            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-3">
                 <Button variant="ghost" size="icon" className="shrink-0">
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Attach file</span>
@@ -130,7 +130,7 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                             </Avatar>
                         )}
                         <div className={cn(
-                            "rounded-xl p-3 max-w-[80%]",
+                            "rounded-xl p-2.5 max-w-[80%] text-sm",
                             msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'
                         )}>
                             <div className="prose-sm dark:prose-invert text-inherit max-w-none">
@@ -194,7 +194,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
-        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-2">
+        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-3">
             <Input
                 name="prompt"
                 placeholder="Ask a follow-up..."
