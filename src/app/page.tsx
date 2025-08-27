@@ -39,11 +39,11 @@ const SubmitButton = ({ disabled }: { disabled: boolean }) => {
     );
 }
 
-const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
-  const [prompt, setLocalPrompt] = useState("");
-  const { pending } = useFormStatus();
+const WelcomeFormContent = ({ setPrompt, formRef }) => {
+    const [prompt, setLocalPrompt] = useState("");
+    const { pending } = useFormStatus();
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !pending) {
         event.preventDefault();
         setPrompt(prompt);
@@ -54,21 +54,8 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
         }, 0);
       }
     };
-  return (
-    <div className="h-screen flex flex-col items-center justify-center text-center px-4">
-       <header className="absolute top-0 right-0 p-4">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                {theme === 'dark' ? <Sun /> : <Moon />}
-                <span className="sr-only">Toggle theme</span>
-            </Button>
-        </header>
-      <main className="flex-1 flex flex-col items-center justify-center">
-        <div className="flex items-center gap-4 mb-6">
-            <CrowLogo className="w-12 h-12 md:w-16 md:h-16 text-primary" />
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
-        </div>
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
-        
+
+    return (
         <div className="w-full max-w-2xl mx-auto">
             <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-2">
                 <Button variant="ghost" size="icon" className="shrink-0">
@@ -92,6 +79,28 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
                 <SubmitButton disabled={!prompt.trim()}/>
             </div>
         </div>
+    );
+};
+
+
+const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
+  return (
+    <div className="h-screen flex flex-col items-center justify-center text-center px-4">
+       <header className="absolute top-0 right-0 p-4">
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                {theme === 'dark' ? <Sun /> : <Moon />}
+                <span className="sr-only">Toggle theme</span>
+            </Button>
+        </header>
+      <main className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex items-center gap-4 mb-6">
+            <CrowLogo className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
+        </div>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
+        
+        <WelcomeFormContent setPrompt={setPrompt} formRef={formRef} />
+
       </main>
       <footer className="p-4 z-10 w-full flex flex-col items-center gap-4">
         <p className="text-sm text-muted-foreground/50">Developed by Bissu</p>
