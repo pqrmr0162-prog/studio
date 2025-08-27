@@ -65,7 +65,7 @@ const WelcomeFormContent = ({ setPrompt, formRef, uploadedFile, setUploadedFile,
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border shadow-lg px-2 py-1 border-primary/50 shadow-primary/20")}>
+            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border shadow-lg px-2 py-1")}>
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -119,7 +119,7 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme, uploadedFile, set
         </header>
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-4 mb-6">
-            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary animate-shine" />
+            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary" />
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
         </div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
@@ -244,7 +244,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
-        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1 transition-all", isTyping && "border-primary/50 shadow-primary/20")}>
+        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border shadow-lg px-2 py-1 transition-all", isTyping && "border-primary/50 shadow-primary/20")}>
             <input
                 type="file"
                 ref={fileInputRef}
@@ -294,7 +294,7 @@ const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme, 
          <div className="flex flex-col h-screen bg-background">
             <header className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-3">
-                    <CrowLogo className="w-7 h-7 animate-shine" />
+                    <CrowLogo className="w-7 h-7" />
                     <div>
                         <h1 className="text-base sm:text-lg md:text-xl font-semibold">AeonAI Assistant</h1>
                         <p className="text-xs text-muted-foreground">Developed by Bissu</p>
@@ -378,7 +378,6 @@ function Home() {
     useEffect(() => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            // It will be handled in toggleListening if the user tries to use it.
             return;
         }
 
