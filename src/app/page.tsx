@@ -57,8 +57,8 @@ const WelcomeFormContent = ({ setPrompt, formRef }) => {
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-3">
-                <Button variant="ghost" size="icon" className="shrink-0">
+            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-2">
+                <Button variant="ghost" size="icon" className="shrink-0 w-11 h-11">
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Attach file</span>
                 </Button>
@@ -69,10 +69,10 @@ const WelcomeFormContent = ({ setPrompt, formRef }) => {
                     value={prompt}
                     onChange={(e) => setLocalPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 placeholder:text-sm"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 placeholder:text-sm h-11"
                     disabled={pending}
                 />
-                 <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
+                 <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground p-2">
                     <Mic className="h-5 w-5" />
                     <span className="sr-only">Use microphone</span>
                 </button>
@@ -194,7 +194,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
-        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-3">
+        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-2">
             <Input
                 name="prompt"
                 placeholder="Ask a follow-up..."
@@ -202,10 +202,10 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80"
+                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 h-11"
                 disabled={disabled}
             />
-            <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground">
+            <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground p-2">
                 <Mic className="h-5 w-5" />
                 <span className="sr-only">Use microphone</span>
             </button>
@@ -318,5 +318,7 @@ function Home() {
 }
 
 export default Home;
+
+    
 
     
