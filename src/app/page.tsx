@@ -121,19 +121,19 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
 
     return (
         <ScrollArea className="flex-1 pb-24" viewportRef={viewportRef}>
-            <div className="px-4 py-6 md:px-6 lg:py-8 space-y-6 max-w-4xl mx-auto">
+            <div className="px-4 py-6 md:px-6 lg:py-8 space-y-4 max-w-4xl mx-auto">
                 {messages.map((msg, index) => (
-                    <div key={index} className={`flex items-start gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                    <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                          {msg.role !== 'user' && (
-                            <Avatar className="w-9 h-9 border">
-                                <AvatarFallback><CrowLogo className="w-5 h-5" /></AvatarFallback>
+                            <Avatar className="w-8 h-8 border">
+                                <AvatarFallback><CrowLogo className="w-4 h-4" /></AvatarFallback>
                             </Avatar>
                         )}
                         <div className={cn(
-                            "rounded-2xl p-4 max-w-[80%]",
+                            "rounded-xl p-3 max-w-[80%]",
                             msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'
                         )}>
-                            <div className="prose prose-sm md:prose-base dark:prose-invert text-inherit max-w-none">
+                            <div className="prose-sm dark:prose-invert text-inherit max-w-none">
                                 {msg.imageUrl ? (
                                     <img src={msg.imageUrl} alt="Generated" className="rounded-lg" />
                                 ) : (
@@ -141,7 +141,7 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                                 )}
                             </div>
                             {msg.sources && msg.sources.length > 0 && (
-                                <div className="mt-4 border-t border-border/50 pt-3">
+                                <div className="mt-3 border-t border-border/50 pt-2">
                                     <h4 className="text-xs font-semibold text-muted-foreground mb-2">SOURCES</h4>
                                     <div className="space-y-2">
                                         {msg.sources.map((source, i) => (
@@ -161,19 +161,19 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                             )}
                         </div>
                         {msg.role === 'user' && (
-                            <Avatar className="w-9 h-9 border">
-                                <AvatarFallback><User className="w-5 h-5"/></AvatarFallback>
+                            <Avatar className="w-8 h-8 border">
+                                <AvatarFallback><User className="w-4 h-4"/></AvatarFallback>
                             </Avatar>
                         )}
                     </div>
                 ))}
                 {pending && (
-                     <div className="flex items-start gap-4">
-                        <Avatar className="w-9 h-9 border">
-                           <AvatarFallback><CrowLogo className="w-5 h-5" /></AvatarFallback>
+                     <div className="flex items-start gap-3">
+                        <Avatar className="w-8 h-8 border">
+                           <AvatarFallback><CrowLogo className="w-4 h-4" /></AvatarFallback>
                         </Avatar>
-                        <div className="rounded-2xl p-4 bg-secondary text-secondary-foreground rounded-bl-none">
-                            <Skeleton className="h-5 w-32" />
+                        <div className="rounded-xl p-3 bg-secondary text-secondary-foreground rounded-bl-none">
+                            <Skeleton className="h-4 w-24" />
                         </div>
                     </div>
                 )}
@@ -318,3 +318,5 @@ function Home() {
 }
 
 export default Home;
+
+    
