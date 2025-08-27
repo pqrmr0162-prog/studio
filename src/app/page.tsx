@@ -28,11 +28,11 @@ const initialState = {
 const SubmitButton = ({ disabled }: { disabled: boolean }) => {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full w-9 h-9 bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button type="submit" size="icon" disabled={disabled || pending} className="shrink-0 rounded-full w-8 h-8 bg-primary hover:bg-primary/90 text-primary-foreground">
             {pending ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-current"></div>
             ) : (
-                <SendHorizonal className="h-5 w-5" />
+                <SendHorizonal className="h-4 w-4" />
             )}
             <span className="sr-only">Send message</span>
         </Button>
@@ -65,7 +65,7 @@ const WelcomeFormContent = ({ setPrompt, formRef, uploadedFile, setUploadedFile,
 
     return (
         <div className="w-full max-w-2xl mx-auto">
-            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1.5 animate-shine")}>
+            <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1 animate-shine")}>
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -73,8 +73,8 @@ const WelcomeFormContent = ({ setPrompt, formRef, uploadedFile, setUploadedFile,
                     className="hidden"
                     accept="image/*,application/pdf,.txt"
                 />
-                <Button variant="ghost" size="icon" className="shrink-0 w-9 h-9" onClick={() => fileInputRef.current?.click()} disabled={pending}>
-                    <Paperclip className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8" onClick={() => fileInputRef.current?.click()} disabled={pending}>
+                    <Paperclip className="h-4 w-4" />
                     <span className="sr-only">Attach file</span>
                 </Button>
                 {uploadedFile ? (
@@ -93,12 +93,12 @@ const WelcomeFormContent = ({ setPrompt, formRef, uploadedFile, setUploadedFile,
                         value={prompt}
                         onChange={(e) => setLocalPrompt(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 placeholder:text-sm h-9"
+                        className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 placeholder:text-sm h-8"
                         disabled={pending || isListening}
                     />
                 )}
                  <button type="button" onClick={toggleListening} className={cn("shrink-0 text-muted-foreground hover:text-foreground p-2", isListening && "text-primary animate-pulse")}>
-                    <Mic className="h-5 w-5" />
+                    <Mic className="h-4 w-4" />
                     <span className="sr-only">Use microphone</span>
                 </button>
                 <SubmitButton disabled={!(prompt.trim() || uploadedFile)}/>
@@ -244,7 +244,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
-        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1.5", isTyping && "animate-shine")}>
+        <div className={cn("relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-2 py-1", isTyping && "animate-shine")}>
             <input
                 type="file"
                 ref={fileInputRef}
@@ -252,8 +252,8 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
                 className="hidden"
                 accept="image/*,application/pdf,.txt"
             />
-            <Button variant="ghost" size="icon" className="shrink-0 w-9 h-9" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
-                <Paperclip className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
+                <Paperclip className="h-4 w-4" />
                 <span className="sr-only">Attach file</span>
             </Button>
             {uploadedFile ? (
@@ -272,12 +272,12 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
                     value={prompt}
                     onChange={handlePromptChange}
                     onKeyDown={handleKeyDown}
-                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 h-9"
+                    className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 h-8"
                     disabled={disabled || isListening}
                 />
             )}
             <button type="button" onClick={toggleListening} className={cn("shrink-0 text-muted-foreground hover:text-foreground p-2", isListening && "text-primary animate-pulse")}>
-                <Mic className="h-5 w-5" />
+                <Mic className="h-4 w-4" />
                 <span className="sr-only">Use microphone</span>
             </button>
             <SubmitButton disabled={disabled || !(prompt.trim() || uploadedFile)} />
@@ -378,7 +378,7 @@ function Home() {
     useEffect(() => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            // Error will be shown via toast if user tries to use the mic.
+            // It will be handled in toggleListening if the user tries to use it.
             return;
         }
 
