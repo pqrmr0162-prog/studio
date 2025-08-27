@@ -183,9 +183,10 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     );
 };
 
-const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
+    const viewportRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
         if (viewportRef.current) {
@@ -194,7 +195,7 @@ const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEdi
                 behavior: 'smooth',
             });
         }
-    }, [messages, pending, viewportRef]);
+    }, [messages, pending]);
 
     const useChatActions = () => {
         const handleCopy = (text: string) => {
@@ -399,7 +400,7 @@ const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEdi
       );
 };
 
-const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uploadedImagePreview }) => {
+const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uploadedImagePreview, toggleTheme }) => {
     const { pending } = useFormStatus();
 
     const suggestions = [
@@ -422,7 +423,7 @@ const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uplo
     return (
         <div className="flex flex-col h-screen">
             <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 justify-end">
-                <Button onClick={() => document.documentElement.classList.toggle('dark')} variant="ghost" size="icon">
+                <Button onClick={toggleTheme} variant="ghost" size="icon">
                     <Sun className="h-5 w-5 hidden dark:block" />
                     <Moon className="h-5 w-5 dark:hidden" />
                     <span className="sr-only">Toggle theme</span>
@@ -468,7 +469,6 @@ const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uplo
 
 function AppContent({ state, formAction }) {
     const { toast } = useToast();
-    const viewportRef = useRef<HTMLDivElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const initialToastShown = useRef(false);
 
@@ -602,12 +602,12 @@ function AppContent({ state, formAction }) {
                     prompt={prompt}
                     setUploadedImagePreview={setUploadedImagePreview}
                     uploadedImagePreview={uploadedImagePreview}
+                    toggleTheme={toggleTheme}
                 />
             ) : (
                 <ChatView
                     messages={messages}
                     setMessages={setMessages}
-                    viewportRef={viewportRef}
                     editingMessageId={editingMessageId}
                     setEditingMessageId={setEditingMessageId}
                     theme={theme}
