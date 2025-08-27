@@ -74,6 +74,19 @@ html {
   .animate-multicolor-shine {
     animation: multicolor-shine 4s linear infinite;
   }
+  
+  .animate-glow-border {
+    animation: glow-border 2.5s ease-in-out infinite;
+  }
+
+  @keyframes glow-border {
+    0%, 100% {
+      box-shadow: 0 0 0.5rem -0.1rem hsl(var(--primary));
+    }
+    50% {
+      box-shadow: 0 0 1rem -0.1rem hsl(var(--primary));
+    }
+  }
 
   @keyframes shine {
     0%, 100% {
