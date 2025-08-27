@@ -7,7 +7,7 @@ import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Paperclip, Mic, SendHorizonal, Plus, Moon, Sun, User } from "lucide-react";
+import { Paperclip, Mic, SendHorizonal, Plus, Moon, Sun, User, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
 import ReactMarkdown from "react-markdown";
@@ -118,13 +118,32 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                             "rounded-2xl p-4 max-w-[80%]",
                             msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'
                         )}>
-                            <div className="prose prose-invert text-inherit">
+                            <div className="prose prose-sm md:prose-base prose-invert text-inherit max-w-none">
                                 {msg.imageUrl ? (
                                     <img src={msg.imageUrl} alt="Generated" className="rounded-lg" />
                                 ) : (
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                                 )}
                             </div>
+                            {msg.sources && msg.sources.length > 0 && (
+                                <div className="mt-4 border-t border-border/50 pt-3">
+                                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">SOURCES</h4>
+                                    <div className="space-y-2">
+                                        {msg.sources.map((source, i) => (
+                                            <a 
+                                                key={i} 
+                                                href={source.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="flex items-center gap-2 text-xs text-primary/80 hover:text-primary transition-colors"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                <span className="truncate">{source.title}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         {msg.role === 'user' && (
                             <Avatar className="w-9 h-9 border">
@@ -282,3 +301,5 @@ function Home() {
 }
 
 export default Home;
+
+    
