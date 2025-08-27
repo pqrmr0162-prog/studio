@@ -64,13 +64,13 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
         </header>
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex items-center gap-4 mb-6">
-            <CrowLogo className="w-16 h-16 text-primary" />
-            <h1 className="text-6xl font-semibold">AeonAI</h1>
+            <CrowLogo className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
         </div>
-        <h2 className="text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
         
         <div className="w-full max-w-2xl mx-auto">
-            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
+            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-2">
                 <Button variant="ghost" size="icon" className="shrink-0">
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Attach file</span>
@@ -184,8 +184,8 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
+    <div className="w-full max-w-2xl mx-auto px-4">
+        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-card border border-border/50 shadow-lg px-4 py-2">
             <Input
                 name="prompt"
                 placeholder="Ask a follow-up..."
@@ -216,11 +216,11 @@ const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme }
                 <div className="flex items-center gap-3">
                     <CrowLogo className="w-7 h-7" />
                     <div>
-                        <h1 className="text-xl font-semibold">AeonAI Assistant</h1>
+                        <h1 className="text-base sm:text-lg md:text-xl font-semibold">AeonAI Assistant</h1>
                         <p className="text-xs text-muted-foreground">Developed by Bissu</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
                         <Plus />
                         <span className="sr-only">New Chat</span>
@@ -309,8 +309,3 @@ function Home() {
 }
 
 export default Home;
-
-    
-
-    
-
