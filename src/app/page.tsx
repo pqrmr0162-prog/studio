@@ -304,7 +304,7 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
                         )}>
                           {message.sender === 'ai' && (
                             <Avatar className="w-8 h-8 border shrink-0">
-                               <AvatarFallback>A</AvatarFallback>
+                               <AvatarFallback><CrowLogo/></AvatarFallback>
                             </Avatar>
                           )}
                            {message.sender === 'user' && message.text && (
@@ -375,7 +375,7 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
                     {pending && (
                       <div className="flex items-start gap-2 sm:gap-4">
                           <Avatar className="w-8 h-8 border shrink-0">
-                             <AvatarFallback>A</AvatarFallback>
+                             <AvatarFallback><CrowLogo/></AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-1.5 py-3">
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
@@ -400,13 +400,14 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
       );
 };
 
-const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uploadedImagePreview, toggleTheme }) => {
+const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uploadedImagePreview, toggleTheme, theme }) => {
     const { pending } = useFormStatus();
 
     const suggestions = [
-        "What basic can AeonAI perform?",
-        "Can you compare AeonAI to other AI models like ChatGPT?",
-        "Help me brainstorm some ideas for my project."
+        "Tell me a fun fact",
+        "what is the capital of india",
+        "Explain the theory of relativity",
+        "Write a short story"
     ];
 
     const handleSuggestionClick = (suggestion: string) => {
@@ -424,8 +425,7 @@ const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uplo
         <div className="flex flex-col h-screen">
             <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 justify-end">
                 <Button onClick={toggleTheme} variant="ghost" size="icon">
-                    <Sun className="h-5 w-5 hidden dark:block" />
-                    <Moon className="h-5 w-5 dark:hidden" />
+                    {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
                     <span className="sr-only">Toggle theme</span>
                 </Button>
                 <Avatar className="w-8 h-8 border">
@@ -438,15 +438,15 @@ const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uplo
                         <CrowLogo className="w-10 h-10" />
                         AeonAI
                     </h1>
-                    <p className="text-muted-foreground">Your intelligent assistant</p>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-8 justify-center max-w-md">
+                <div className="flex flex-wrap gap-2 mt-8 justify-center max-w-lg">
                     {suggestions.map((suggestion, index) => (
                         <Button
                             key={index}
                             variant="outline"
                             onClick={() => handleSuggestionClick(suggestion)}
                             disabled={pending}
+                            className="text-xs sm:text-sm"
                         >
                             {suggestion}
                         </Button>
@@ -481,7 +481,7 @@ function AppContent({ state, formAction }) {
     useLayoutEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
-        document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+        document.documentElement.classList.add('dark');
     }, []);
 
     const toggleTheme = () => {
@@ -603,6 +603,7 @@ function AppContent({ state, formAction }) {
                     setUploadedImagePreview={setUploadedImagePreview}
                     uploadedImagePreview={uploadedImagePreview}
                     toggleTheme={toggleTheme}
+                    theme={theme}
                 />
             ) : (
                 <ChatView
