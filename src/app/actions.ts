@@ -52,6 +52,16 @@ export async function getAiResponse(
 
       const result: InterpretPromptOutput = await interpretPrompt(input);
       
+      if (!result || !result.response) {
+        return { 
+          response: "My apologies, but I'm unable to provide a response to that right now. Please try rephrasing your request.",
+          suggestions: ["Can you explain that differently?", "What are your capabilities?"], 
+          sources: null,
+          imageUrl: null,
+          error: null 
+        };
+      }
+
       return { 
         response: result.response, 
         suggestions: result.suggestions ?? null, 
