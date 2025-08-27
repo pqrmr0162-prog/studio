@@ -4,7 +4,7 @@
 import { useActionState, useEffect, useRef, useState, useLayoutEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
-import { AeonLogo } from "@/components/logo";
+import { CrowLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Mic, SendHorizonal, Plus, Moon, Sun, User } from "lucide-react";
@@ -58,7 +58,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
     <div className="h-screen flex flex-col">
       <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
         <div className="flex items-center gap-4 mb-6">
-            <AeonLogo className="w-16 h-16 text-primary" />
+            <CrowLogo className="w-16 h-16 text-primary" />
             <h1 className="text-6xl font-semibold">AeonAI</h1>
         </div>
         <h2 className="text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
@@ -111,7 +111,7 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                     <div key={index} className={`flex items-start gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                          {msg.role !== 'user' && (
                             <Avatar className="w-9 h-9 border">
-                                <AvatarFallback><AeonLogo className="w-5 h-5" /></AvatarFallback>
+                                <AvatarFallback><CrowLogo className="w-5 h-5" /></AvatarFallback>
                             </Avatar>
                         )}
                         <div className={cn(
@@ -136,7 +136,7 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                 {pending && (
                      <div className="flex items-start gap-4">
                         <Avatar className="w-9 h-9 border">
-                           <AvatarFallback><AeonLogo className="w-5 h-5" /></AvatarFallback>
+                           <AvatarFallback><CrowLogo className="w-5 h-5" /></AvatarFallback>
                         </Avatar>
                         <div className="rounded-2xl p-4 bg-secondary text-secondary-foreground rounded-bl-none">
                             <Skeleton className="h-5 w-32" />
@@ -206,7 +206,7 @@ const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
          <div className="flex flex-col h-screen bg-background">
             <header className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-3">
-                    <AeonLogo className="w-7 h-7" />
+                    <CrowLogo className="w-7 h-7" />
                     <div>
                         <h1 className="text-xl font-semibold">AeonAI Assistant</h1>
                         <p className="text-xs text-muted-foreground">Developed by Bissu</p>
