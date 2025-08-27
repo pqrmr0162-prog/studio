@@ -231,15 +231,11 @@ const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
                         {theme === 'dark' ? <Sun /> : <Moon />}
                         <span className="sr-only">Toggle theme</span>
                     </Button>
-                    <Avatar className="w-9 h-9 border">
-                         <AvatarFallback><User className="w-5 h-5"/></AvatarFallback>
-                    </Avatar>
                 </div>
             </header>
             <ChatView messages={messages} pending={pending} />
             <footer className="p-4 z-10 w-full flex flex-col items-center gap-4 border-t">
                 <ChatInput prompt={prompt} setPrompt={setPrompt} formRef={formRef} disabled={pending} />
-                <p className="text-sm text-muted-foreground/50">Created by Bissu</p>
             </footer>
         </div>
     );
@@ -296,5 +292,3 @@ function Home() {
 }
 
 export default Home;
-
-    
