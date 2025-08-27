@@ -37,7 +37,7 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 0 0% 0%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 100% 56%;
+    --primary: 210 100% 50%;
     --primary-foreground: 210 40% 98%;
     --secondary: 0 0% 10%;
     --secondary-foreground: 210 40% 98%;
@@ -85,15 +85,16 @@ html {
   }
 
    @keyframes multicolor-shine {
-    0%, 100% { drop-shadow: 0 0 0.75rem #00c6ff; }
-    10% { drop-shadow: 0 0 0.75rem #ff00de; }
-    20% { drop-shadow: 0 0 0.75rem #ffb500; }
-    30% { drop-shadow: 0 0 0.75rem #00ffc8; }
-    40% { drop-shadow: 0 0 0.75rem #deff00; }
-    50% { drop-shadow: 0 0 0.75rem #005eff; }
-    60% { drop-shadow: 0 0 0.75rem #ff005a; }
-    70% { drop-shadow: 0 0 0.75rem #c800ff; }
-    80% { drop-shadow: 0 0 0.75rem #00ff83; }
-    90% { drop-shadow: 0 0 0.75rem #ff8b00; }
+    0% { drop-shadow: 0 0 0.75rem #00c6ff; }
+    10% { drop-shadow: 0 0 0.85rem #ff00de; }
+    20% { drop-shadow: 0 0 0.95rem #ffb500; }
+    30% { drop-shadow: 0 0 1.05rem #00ffc8; }
+    40% { drop-shadow: 0 0 1.15rem #deff00; }
+    50% { drop-shadow: 0 0 1.25rem #005eff; }
+    60% { drop-shadow: 0 0 1.15rem #ff005a; }
+    70% { drop-shadow: 0 0 1.05rem #c800ff; }
+    80% { drop-shadow: 0 0 0.95rem #00ff83; }
+    90% { drop-shadow: 0 0 0.85rem #ff8b00; }
+    100% { drop-shadow: 0 0 0.75rem #00c6ff; }
   }
 }
