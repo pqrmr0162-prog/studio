@@ -39,7 +39,7 @@ const SubmitButton = ({ disabled }: { disabled: boolean }) => {
     );
 }
 
-const WelcomeView = ({ setPrompt, formRef }) => {
+const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme }) => {
   const [prompt, setLocalPrompt] = useState("");
   const { pending } = useFormStatus();
 
@@ -56,6 +56,12 @@ const WelcomeView = ({ setPrompt, formRef }) => {
     };
   return (
     <div className="h-screen flex flex-col items-center justify-center text-center px-4">
+       <header className="absolute top-0 right-0 p-4">
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                {theme === 'dark' ? <Sun /> : <Moon />}
+                <span className="sr-only">Toggle theme</span>
+            </Button>
+        </header>
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex items-center gap-4 mb-6">
             <CrowLogo className="w-16 h-16 text-primary" />
@@ -201,31 +207,8 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
 };
 
 
-const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
+const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme }) => {
     const { pending } = useFormStatus();
-    const [theme, setTheme] = useState('dark');
-    
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        setTheme(storedTheme);
-        if (storedTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    };
 
     return (
          <div className="flex flex-col h-screen bg-background">
@@ -263,6 +246,29 @@ function Home() {
     const { toast } = useToast();
     const [prompt, setPrompt] = useState("");
     const [messages, setMessages] = useState<any[]>([]); 
+    const [theme, setTheme] = useState('dark');
+    
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(storedTheme);
+        if (storedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        if (newTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+
 
     useEffect(() => {
         if (state?.error) {
@@ -294,9 +300,9 @@ function Home() {
     return (
         <form ref={formRef} action={handleFormAction} className="contents">
             {messages.length === 0 ? (
-                <WelcomeView setPrompt={setPrompt} formRef={formRef} />
+                <WelcomeView setPrompt={setPrompt} formRef={formRef} theme={theme} toggleTheme={toggleTheme} />
             ) : (
-                <AppContent messages={messages} prompt={prompt} setPrompt={setPrompt} formRef={formRef} />
+                <AppContent messages={messages} prompt={prompt} setPrompt={setPrompt} formRef={formRef} theme={theme} toggleTheme={toggleTheme} />
             )}
         </form>
     );
@@ -307,3 +313,4 @@ export default Home;
     
 
     
+
