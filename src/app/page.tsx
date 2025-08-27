@@ -264,7 +264,7 @@ const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMes
 
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 border-b">
+            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -497,7 +497,7 @@ function AppContent({ state, formAction }) {
                 setMessages((prev) => [...prev, newAiMessage]);
             }
         }
-    }, [state]);
+    }, [state, toast, editingMessageId, messages]);
 
     useEffect(() => {
         if (viewportRef.current) {
@@ -582,3 +582,5 @@ function Home() {
 }
 
 export default Home;
+
+    
