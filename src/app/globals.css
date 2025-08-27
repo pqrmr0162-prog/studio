@@ -40,13 +40,13 @@ body {
   }
 
   .dark {
-    --background: 240 6% 10%;
+    --background: 0 0% 8%;
     --foreground: 210 40% 98%;
 
     --card: 240 6% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 240 6% 10%;
+    --popover: 0 0% 8%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 217 91% 60%;
@@ -76,10 +76,11 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #131314;
   }
 }
 
 html {
   -webkit-tap-highlight-color: transparent;
 }
+
+    
