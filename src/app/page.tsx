@@ -183,7 +183,7 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     );
 };
 
-const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     
@@ -399,6 +399,72 @@ const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMes
       );
 };
 
+const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uploadedImagePreview }) => {
+    const { pending } = useFormStatus();
+
+    const suggestions = [
+        "What basic can AeonAI perform?",
+        "Can you compare AeonAI to other AI models like ChatGPT?",
+        "Help me brainstorm some ideas for my project."
+    ];
+
+    const handleSuggestionClick = (suggestion: string) => {
+        if (pending) return;
+        setPrompt(suggestion);
+        setTimeout(() => {
+            if (formRef.current) {
+                const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
+                submitButton?.click();
+            }
+        }, 0);
+    };
+
+    return (
+        <div className="flex flex-col h-screen">
+            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 justify-end">
+                <Button onClick={() => document.documentElement.classList.toggle('dark')} variant="ghost" size="icon">
+                    <Sun className="h-5 w-5 hidden dark:block" />
+                    <Moon className="h-5 w-5 dark:hidden" />
+                    <span className="sr-only">Toggle theme</span>
+                </Button>
+                <Avatar className="w-8 h-8 border">
+                    <AvatarFallback><User size={16}/></AvatarFallback>
+                </Avatar>
+            </header>
+            <main className="flex-1 flex flex-col items-center justify-center -mt-16">
+                <div className="text-center space-y-2">
+                    <h1 className="text-4xl font-bold flex items-center gap-2 justify-center">
+                        <CrowLogo className="w-10 h-10" />
+                        AeonAI
+                    </h1>
+                    <p className="text-muted-foreground">Your intelligent assistant</p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-8 justify-center max-w-md">
+                    {suggestions.map((suggestion, index) => (
+                        <Button
+                            key={index}
+                            variant="outline"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            disabled={pending}
+                        >
+                            {suggestion}
+                        </Button>
+                    ))}
+                </div>
+            </main>
+            <footer className="fixed bottom-0 left-0 right-0 p-2 sm:p-4 bg-background/80 backdrop-blur-sm z-10">
+                <MessageInput 
+                    prompt={prompt} 
+                    setPrompt={setPrompt} 
+                    formRef={formRef}
+                    uploadedImagePreview={uploadedImagePreview}
+                    setUploadedImagePreview={setUploadedImagePreview}
+                />
+            </footer>
+        </div>
+    );
+};
+
 
 function AppContent({ state, formAction }) {
     const { toast } = useToast();
@@ -416,19 +482,6 @@ function AppContent({ state, formAction }) {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
         document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-
-        setMessages([
-          {
-            id: Date.now(),
-            sender: 'ai',
-            text: "Hello! How can I assist you today? I am AeonAI, a helpful assistant created by Bissu using Google's powerful data and models. My own unique model is known as Aeon-1s.",
-            suggestions: [
-                "What basic can AeonAI perform?",
-                "Can you compare AeonAI to other AI models like ChatGPT?",
-                "Help me brainstorm some ideas for my project."
-            ]
-          }
-        ]);
     }, []);
 
     const toggleTheme = () => {
@@ -542,21 +595,30 @@ function AppContent({ state, formAction }) {
 
     return (
         <form ref={formRef} action={handleFormSubmit} className="contents">
-            <ChatView
-                messages={messages}
-                setMessages={setMessages}
-                onFormSubmit={handleFormSubmit}
-                viewportRef={viewportRef}
-                editingMessageId={editingMessageId}
-                setEditingMessageId={setEditingMessageId}
-                theme={theme}
-                toggleTheme={toggleTheme}
-                prompt={prompt}
-                setPrompt={setPrompt}
-                formRef={formRef}
-                uploadedImagePreview={uploadedImagePreview}
-                setUploadedImagePreview={setUploadedImagePreview}
-            />
+            {messages.length === 0 ? (
+                <WelcomeView 
+                    setPrompt={setPrompt} 
+                    formRef={formRef} 
+                    prompt={prompt}
+                    setUploadedImagePreview={setUploadedImagePreview}
+                    uploadedImagePreview={uploadedImagePreview}
+                />
+            ) : (
+                <ChatView
+                    messages={messages}
+                    setMessages={setMessages}
+                    viewportRef={viewportRef}
+                    editingMessageId={editingMessageId}
+                    setEditingMessageId={setEditingMessageId}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    formRef={formRef}
+                    uploadedImagePreview={uploadedImagePreview}
+                    setUploadedImagePreview={setUploadedImagePreview}
+                />
+            )}
         </form>
     );
 }
