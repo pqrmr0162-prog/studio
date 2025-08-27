@@ -188,7 +188,7 @@ const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (viewportRef.current) {
             viewportRef.current.scrollTo({
                 top: viewportRef.current.scrollHeight,
