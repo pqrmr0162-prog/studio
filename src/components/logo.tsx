@@ -5,18 +5,14 @@ export function AeonLogo({ className, ...props }: React.SVGProps<SVGSVGElement>)
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
       className={cn("text-primary", className)}
       aria-label="AeonAI Logo"
       {...props}
     >
       <title>AeonAI Logo</title>
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
+      <path d="M14.46 23.32L4.68 13.54a1.2 1.2 0 0 1 0-1.7l9.78-9.78a1.2 1.2 0 0 1 1.7 0l3.47 3.47a1.2 1.2 0 0 1 0 1.7L9.83 12l9.8 9.8a1.2 1.2 0 0 1 0 1.7l-3.47 3.47a1.2 1.2 0 0 1-1.7 0Z"/>
+      <path d="M9.54 23.32L.68 14.46a1.2 1.2 0 0 1 0-1.7L13.54.68a1.2 1.2 0 0 1 1.7 0l3.47 3.47a1.2 1.2 0 0 1 0 1.7L8.83 15.73l9.88 9.88a1.2 1.2 0 0 1 0 1.7l-3.47 3.47a1.2 1.2 0 0 1-1.7 0Z"/>
     </svg>
   );
 }
