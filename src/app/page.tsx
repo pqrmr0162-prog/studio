@@ -64,7 +64,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
         <h2 className="text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
         
         <div className="w-full max-w-2xl mx-auto">
-            <div className="relative flex items-center gap-2 rounded-full bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
+            <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
                 <Button variant="ghost" size="icon" className="shrink-0">
                     <Paperclip className="h-5 w-5" />
                     <span className="sr-only">Attach file</span>
@@ -118,7 +118,7 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
                             "rounded-2xl p-4 max-w-[80%]",
                             msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none'
                         )}>
-                            <div className="prose prose-sm md:prose-base prose-invert text-inherit max-w-none">
+                            <div className="prose prose-sm md:prose-base dark:prose-invert text-inherit max-w-none">
                                 {msg.imageUrl ? (
                                     <img src={msg.imageUrl} alt="Generated" className="rounded-lg" />
                                 ) : (
@@ -179,7 +179,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-        <div className="relative flex items-center gap-2 rounded-full bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
+        <div className="relative flex items-center gap-2 rounded-full bg-secondary dark:bg-[#1e1f20] border border-border/50 shadow-lg px-4 py-2">
             <Input
                 name="prompt"
                 placeholder="Ask a follow-up..."
