@@ -49,7 +49,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
     );
 }
 
-const MessageInput = ({ prompt, setPrompt, onFormSubmit, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +75,8 @@ const MessageInput = ({ prompt, setPrompt, onFormSubmit, formRef, uploadedImageP
         event.preventDefault();
         // Trigger the form submission by programmatically clicking the submit button
         if (formRef.current) {
-          formRef.current.requestSubmit();
+          const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
+          submitButton?.click();
         }
       }
     };
@@ -198,7 +199,6 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePr
                        <MessageInput 
                           prompt={prompt} 
                           setPrompt={setPrompt} 
-                          onFormSubmit={onFormSubmit}
                           formRef={formRef} 
                           uploadedImagePreview={uploadedImagePreview}
                           setUploadedImagePreview={setUploadedImagePreview}
@@ -213,7 +213,7 @@ const WelcomeView = ({ onFormSubmit, setPrompt, prompt, formRef, uploadedImagePr
     );
 };
 
-const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, formRef, uploadedImagePreview, setUploadedImagePreview, theme, toggleTheme }) => {
+const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     
@@ -240,6 +240,8 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
             
+            // We can't use `formRef.current.requestSubmit()` because we're not inside the form.
+            // So, we'll manually call the `onFormSubmit` function with the suggestion.
             const formData = new FormData();
             formData.append('prompt', suggestion);
             onFormSubmit(formData);
@@ -271,7 +273,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                 </div>
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <Button onClick={toggleTheme} variant="outline" size="icon">
+                <Button onClick={toggleTheme} variant="ghost" size="icon">
                     {theme === 'dark' ? <Sun size={20}/> : <Moon size={20} />}
                     <span className="sr-only">Toggle theme</span>
                 </Button>
@@ -279,6 +281,9 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                     <Plus size={16}/>
                     <span className="hidden md:inline ml-2">New Chat</span>
                 </Button>
+                <Avatar className="w-8 h-8 border">
+                    <AvatarFallback><User size={16}/></AvatarFallback>
+                </Avatar>
               </div>
             </header>
             <main className="flex-1 overflow-y-auto">
@@ -315,9 +320,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                         )}>
                           {message.sender === 'ai' && (
                             <Avatar className="w-8 h-8 border shrink-0">
-                               <AvatarFallback>
-                                  <CrowLogo className="w-5 h-5 text-muted-foreground" />
-                              </AvatarFallback>
+                               <AvatarFallback>A</AvatarFallback>
                             </Avatar>
                           )}
                            {message.sender === 'user' && message.text && (
@@ -388,9 +391,7 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
                     {pending && (
                       <div className="flex items-start gap-2 sm:gap-4">
                           <Avatar className="w-8 h-8 border shrink-0">
-                             <AvatarFallback>
-                                <CrowLogo className="w-5 h-5 text-muted-foreground" />
-                             </AvatarFallback>
+                             <AvatarFallback>A</AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-1.5 py-3">
                               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-0"></div>
@@ -406,7 +407,6 @@ const ChatView = ({ messages, setMessages, prompt, setPrompt, onFormSubmit, view
               <MessageInput 
                 prompt={prompt} 
                 setPrompt={setPrompt} 
-                onFormSubmit={onFormSubmit}
                 formRef={formRef}
                 uploadedImagePreview={uploadedImagePreview}
                 setUploadedImagePreview={setUploadedImagePreview}
@@ -433,6 +433,19 @@ function AppContent({ state, formAction }) {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
         document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+
+        setMessages([
+          {
+            id: Date.now(),
+            sender: 'ai',
+            text: "Hello! How can I assist you today? I am AeonAI, a helpful assistant created by Bissu using Google's powerful data and models. My own unique model is known as Aeon-1s.",
+            suggestions: [
+                "What basic can AeonAI perform?",
+                "Can you compare AeonAI to other AI models like ChatGPT?",
+                "Help me brainstorm some ideas for my project."
+            ]
+          }
+        ]);
     }, []);
 
     const toggleTheme = () => {
@@ -544,32 +557,21 @@ function AppContent({ state, formAction }) {
 
     return (
         <form ref={formRef} action={handleFormSubmit} className="contents">
-            {messages.length === 0 && !isPending ? (
-                <WelcomeView 
-                    setPrompt={setPrompt} 
-                    prompt={prompt} 
-                    formRef={formRef}
-                    uploadedImagePreview={uploadedImagePreview}
-                    setUploadedImagePreview={setUploadedImagePreview}
-                    onFormSubmit={handleFormSubmit}
-                />
-            ) : (
-                <ChatView
-                    messages={messages}
-                    setMessages={setMessages}
-                    prompt={prompt}
-                    setPrompt={setPrompt}
-                    onFormSubmit={handleFormSubmit}
-                    viewportRef={viewportRef}
-                    editingMessageId={editingMessageId}
-                    setEditingMessageId={setEditingMessageId}
-                    formRef={formRef}
-                    uploadedImagePreview={uploadedImagePreview}
-                    setUploadedImagePreview={setUploadedImagePreview}
-                    theme={theme}
-                    toggleTheme={toggleTheme}
-                />
-            )}
+            <ChatView
+                messages={messages}
+                setMessages={setMessages}
+                onFormSubmit={handleFormSubmit}
+                viewportRef={viewportRef}
+                editingMessageId={editingMessageId}
+                setEditingMessageId={setEditingMessageId}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                formRef={formRef}
+                uploadedImagePreview={uploadedImagePreview}
+                setUploadedImagePreview={setUploadedImagePreview}
+            />
         </form>
     );
 }
