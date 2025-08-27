@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useLayoutEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
-import { AeonLogo, CrowLogo } from "@/components/logo";
+import { AeonLogo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, Mic, SendHorizonal, Plus, Moon, Sun, User } from "lucide-react";
@@ -48,8 +48,7 @@ const WelcomeView = ({ setPrompt, formRef }) => {
         setPrompt(prompt);
          setTimeout(() => {
             if (formRef.current) {
-                const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
-                submitButton?.click();
+                formRef.current.requestSubmit();
             }
         }, 0);
       }
@@ -153,8 +152,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
     if (event.key === 'Enter' && !event.shiftKey && prompt.trim() && !disabled) {
       event.preventDefault();
       if (formRef.current) {
-        const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
-        submitButton?.click();
+        formRef.current.requestSubmit();
       }
     }
   };
@@ -186,11 +184,22 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled }) => {
 const AppContent = ({ messages, prompt, setPrompt, formRef }) => {
     const { pending } = useFormStatus();
     const [theme, setTheme] = useState('dark');
+    
+    useEffect(() => {
+        // On mount, set the theme based on the class on the html element
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        setTheme(isDarkMode ? 'dark' : 'light');
+    }, []);
+
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
-        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        if (newTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     };
 
     return (
@@ -251,7 +260,7 @@ function Home() {
         document.documentElement.classList.add('dark');
     }, []);
 
-    const handleFormAction = async (formData: FormData) => {
+    const handleFormAction = (formData: FormData) => {
         const currentPrompt = formData.get("prompt") as string;
         if (!currentPrompt) return;
         setMessages(prev => [...prev, { role: 'user', content: currentPrompt }]);
@@ -270,5 +279,3 @@ function Home() {
 }
 
 export default Home;
-
-    
