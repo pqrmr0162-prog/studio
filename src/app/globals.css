@@ -14,7 +14,7 @@ body {
     --card-foreground: 240 10% 3.9%;
     --popover: 240 10% 96.1%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 217 91% 60%;
+    --primary: 210 100% 56%;
     --primary-foreground: 210 40% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -37,7 +37,7 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 0 0% 0%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    --primary: 210 100% 56%;
     --primary-foreground: 210 40% 98%;
     --secondary: 0 0% 10%;
     --secondary-foreground: 210 40% 98%;
@@ -64,4 +64,36 @@ body {
 
 html {
   -webkit-tap-highlight-color: transparent;
+}
+
+@layer utilities {
+  .animate-shine {
+    animation: shine 2.5s ease-in-out infinite;
+  }
+
+  .animate-multicolor-shine {
+    animation: multicolor-shine 4s linear infinite;
+  }
+
+  @keyframes shine {
+    0%, 100% {
+      drop-shadow: 0 0 0.5rem hsl(var(--primary));
+    }
+    50% {
+      drop-shadow: 0 0 1.25rem hsl(var(--primary));
+    }
+  }
+
+   @keyframes multicolor-shine {
+    0%, 100% { drop-shadow: 0 0 0.75rem #00c6ff; }
+    10% { drop-shadow: 0 0 0.75rem #ff00de; }
+    20% { drop-shadow: 0 0 0.75rem #ffb500; }
+    30% { drop-shadow: 0 0 0.75rem #00ffc8; }
+    40% { drop-shadow: 0 0 0.75rem #deff00; }
+    50% { drop-shadow: 0 0 0.75rem #005eff; }
+    60% { drop-shadow: 0 0 0.75rem #ff005a; }
+    70% { drop-shadow: 0 0 0.75rem #c800ff; }
+    80% { drop-shadow: 0 0 0.75rem #00ff83; }
+    90% { drop-shadow: 0 0 0.75rem #ff8b00; }
+  }
 }
