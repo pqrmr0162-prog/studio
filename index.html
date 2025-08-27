@@ -5,26 +5,25 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Your Site Title</title>
 
-   <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Your Site Title</title>
+    <!-- Most compatible fallback (ICO) — put /favicon.ico in your public/ folder -->
+    <link rel="shortcut icon" href="/favicon.ico?v=4" type="image/x-icon" />
+    <link rel="icon" href="/favicon.ico?v=4" type="image/x-icon" />
 
-  <!-- ✅ Custom favicon setup -->
-  <link rel="icon" href="favicon.ico?v=4" type="image/x-icon" />
-  <link rel="icon" href="favicon.svg?v=4" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4" />
-  <link rel="manifest" href="site.webmanifest?v=4" />
+    <!-- SVG (modern browsers) -->
+    <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
 
-  <!-- Android / PWA sizes -->
-  <link rel="icon" sizes="96x96" href="favicon-96x96.png?v=4" />
-  <link rel="icon" sizes="192x192" href="web-app-manifest-192x192.png?v=4" />
-  <link rel="icon" sizes="512x512" href="web-app-manifest-512x512.png?v=4" />
-</head>
+    <!-- PNG sizes -->
+    <link rel="icon" sizes="96x96" href="/favicon-96x96.png?v=4" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" />
 
+    <!-- Safari pinned tab -->
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/site.webmanifest?v=4" />
+    <meta name="theme-color" content="#ffffff" />
   </head>
   <body>
-    <h1>Hello</h1>
-    <p>Your page content goes here.</p>
+    <!-- page content -->
   </body>
 </html>
