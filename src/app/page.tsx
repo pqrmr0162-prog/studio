@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition, useLayoutEffect } from "react";
+import { useActionState, useEffect, useRef, useState, useLayoutEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { getAiResponse } from "@/app/actions";
 import { CrowLogo } from "@/components/logo";
@@ -183,10 +183,19 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     );
 };
 
-const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview, onFormSubmit }) => {
+const ChatView = ({ messages, setMessages, onFormSubmit, viewportRef, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
     
+    useEffect(() => {
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({
+                top: viewportRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [messages, pending, viewportRef]);
+
     const useChatActions = () => {
         const handleCopy = (text: string) => {
             navigator.clipboard.writeText(text);
@@ -209,9 +218,16 @@ const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEdi
         
         const handleSuggestionClick = (suggestion: string) => {
             if (pending) return;
-            const formData = new FormData();
-            formData.append('prompt', suggestion);
-            onFormSubmit(formData);
+            // Directly set the prompt and submit the form
+            setPrompt(suggestion);
+            // We need to trigger form submission in the next render cycle
+            // for the prompt state to update before submission.
+            setTimeout(() => {
+                if (formRef.current) {
+                    const submitButton = formRef.current.querySelector('button[type="submit"]') as HTMLButtonElement;
+                    submitButton?.click();
+                }
+            }, 0);
         };
         
         const handleNewChat = () => {
@@ -231,7 +247,7 @@ const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEdi
 
     return (
         <div className="flex flex-col h-screen bg-background">
-            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4">
+            <header className="flex items-center shrink-0 gap-4 p-2 sm:p-4 border-b">
               <div className="flex items-center gap-2">
                 <CrowLogo className="w-8 h-8"/>
                 <div>
@@ -383,6 +399,7 @@ const ChatView = ({ messages, setMessages, viewportRef, editingMessageId, setEdi
       );
 };
 
+
 function AppContent({ state, formAction }) {
     const { toast } = useToast();
     const viewportRef = useRef<HTMLDivElement>(null);
@@ -395,8 +412,6 @@ function AppContent({ state, formAction }) {
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
     const [theme, setTheme] = useState('dark');
     
-    const [isPending, startTransition] = useTransition();
-
     useLayoutEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
@@ -425,9 +440,57 @@ function AppContent({ state, formAction }) {
         });
     };
 
+    const handleFormSubmit = (formData: FormData) => {
+        const currentPrompt = formData.get("prompt") as string;
+        const uploadedFile = formData.get("uploadedFile") as File;
+
+        if (!currentPrompt?.trim() && (!uploadedFile || uploadedFile.size === 0)) {
+            return;
+        }
+
+        const userMessage: Message = {
+            id: Date.now(),
+            sender: 'user',
+            text: currentPrompt,
+            imageUrl: uploadedImagePreview || undefined,
+        };
+
+        if (editingMessageId !== null) {
+             setMessages(prev => {
+                const newMessages = [...prev];
+                const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
+                if (editedMessageIndex !== -1) {
+                    newMessages[editedMessageIndex] = { ...userMessage, id: editingMessageId };
+                     // Remove the next AI message if it exists
+                     if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
+                         newMessages.splice(editedMessageIndex + 1, 1);
+                     }
+                }
+                return newMessages;
+            });
+        } else {
+            // Remove suggestions from all previous messages and add the new one
+             setMessages(prev => {
+                const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
+                return [...newMessages, userMessage];
+            });
+        }
+
+        formAction(formData);
+
+        setPrompt("");
+        setUploadedImagePreview(null);
+        if (formRef.current) {
+            // Also reset the file input
+            const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
+            if(fileInput) fileInput.value = "";
+        }
+    };
+    
     useEffect(() => {
         if (!state) return;
 
+        // This ref check prevents showing a toast for the initial state.
         if (initialToastShown.current) {
             if (state.error) {
                 toast({
@@ -435,6 +498,7 @@ function AppContent({ state, formAction }) {
                     title: "Error",
                     description: state.error,
                 });
+                // If there was an error and we weren't editing, remove the optimistic user message.
                 if (editingMessageId === null && messages[messages.length - 1]?.sender === 'user') {
                     setMessages(prev => prev.slice(0, -1));
                 }
@@ -453,6 +517,7 @@ function AppContent({ state, formAction }) {
                         const newMessages = [...prev];
                         const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
                         if (editedMessageIndex !== -1) {
+                            // Replace the placeholder AI message or insert a new one
                             if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
                                 newMessages[editedMessageIndex + 1] = newAiMessage;
                             } else {
@@ -463,69 +528,17 @@ function AppContent({ state, formAction }) {
                     });
                     setEditingMessageId(null);
                 } else {
+                    // Add the new AI message to the end.
                     setMessages((prev) => [...prev, newAiMessage]);
                 }
             }
         } else {
+            // After the first render, set the ref to true.
             initialToastShown.current = true;
         }
 
     }, [state, toast, editingMessageId, messages]);
 
-    useEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({
-                top: viewportRef.current.scrollHeight,
-                behavior: 'smooth',
-            });
-        }
-    }, [messages, isPending]);
-
-    const handleFormSubmit = (formData: FormData) => {
-        const currentPrompt = formData.get("prompt") as string;
-        const uploadedFile = formData.get("uploadedFile") as File;
-
-        if (!currentPrompt?.trim() && (!uploadedFile || uploadedFile.size === 0)) {
-            return;
-        }
-
-        const userMessage: Message = {
-            id: Date.now(),
-            sender: 'user',
-            text: currentPrompt,
-            imageUrl: uploadedImagePreview || undefined,
-        };
-        
-        startTransition(() => {
-            if (editingMessageId !== null) {
-                 setMessages(prev => {
-                    const newMessages = [...prev];
-                    const editedMessageIndex = newMessages.findIndex(m => m.id === editingMessageId);
-                    if (editedMessageIndex !== -1) {
-                        newMessages[editedMessageIndex] = { ...userMessage, id: editingMessageId };
-                         if (newMessages[editedMessageIndex + 1]?.sender === 'ai') {
-                             newMessages.splice(editedMessageIndex + 1, 1);
-                         }
-                    }
-                    return newMessages;
-                });
-            } else {
-                 setMessages(prev => {
-                    const newMessages = prev.map(m => ({ ...m, suggestions: undefined }));
-                    return [...newMessages, userMessage];
-                });
-            }
-
-            formAction(formData);
-
-            setPrompt("");
-            setUploadedImagePreview(null);
-            if (formRef.current) {
-                const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
-                if(fileInput) fileInput.value = "";
-            }
-        });
-    };
 
     return (
         <form ref={formRef} action={handleFormSubmit} className="contents">
