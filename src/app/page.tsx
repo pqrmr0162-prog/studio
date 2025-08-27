@@ -183,19 +183,9 @@ const MessageInput = ({ prompt, setPrompt, formRef, uploadedImagePreview, setUpl
     );
 };
 
-const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview }) => {
+const ChatView = ({ messages, setMessages, editingMessageId, setEditingMessageId, theme, toggleTheme, prompt, setPrompt, formRef, uploadedImagePreview, setUploadedImagePreview, viewportRef }) => {
     const { pending } = useFormStatus();
     const { toast } = useToast();
-    const viewportRef = useRef<HTMLDivElement>(null);
-    
-    useEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({
-                top: viewportRef.current.scrollHeight,
-                behavior: 'smooth',
-            });
-        }
-    }, [messages, pending]);
 
     const useChatActions = () => {
         const handleCopy = (text: string) => {
@@ -465,9 +455,11 @@ const WelcomeView = ({ setPrompt, formRef, prompt, setUploadedImagePreview, uplo
 
 
 function AppContent({ state, formAction }) {
+    const { pending } = useFormStatus();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const initialToastShown = useRef(false);
+    const viewportRef = useRef<HTMLDivElement>(null);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [prompt, setPrompt] = useState("");
@@ -478,8 +470,17 @@ function AppContent({ state, formAction }) {
     useLayoutEffect(() => {
         const storedTheme = localStorage.getItem('theme') || 'dark';
         setTheme(storedTheme);
-        document.documentElement.classList.add('dark');
+        document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     }, []);
+
+    useEffect(() => {
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({
+                top: viewportRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [messages, pending]);
 
     const toggleTheme = () => {
         setTheme(prevTheme => {
@@ -608,6 +609,7 @@ function AppContent({ state, formAction }) {
                     formRef={formRef}
                     uploadedImagePreview={uploadedImagePreview}
                     setUploadedImagePreview={setUploadedImagePreview}
+                    viewportRef={viewportRef}
                 />
             )}
         </form>
@@ -620,3 +622,5 @@ function Home() {
 }
 
 export default Home;
+
+    
