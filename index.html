@@ -1,29 +1,249 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Your Site Title</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Favicon Demo</title>
+    <link rel="icon" type="image/x-icon" href="https://favicon-generator-api.vercel.app/api/favicon?text=AA&background=5C6BC0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #5C6BC0;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        h2 {
+            color: #5C6BC0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E8EAF6;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .steps {
+            background: #E8EAF6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .step {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            background: #5C6BC0;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .favicon-preview {
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .favicon-box {
+            display: inline-block;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin: 15px 0;
+        }
+        
+        .favicon-img {
+            width: 64px;
+            height: 64px;
+            margin: 10px auto;
+            display: block;
+            background: #5C6BC0;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #3f4d99;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Custom Favicon Implementation</h1>
+            <p class="subtitle">Learn how to add a custom favicon to replace the Firebase default</p>
+        </header>
+        
+        <div class="content">
+            <div class="section">
+                <h2>What is a Favicon?</h2>
+                <p>A favicon (favorite icon) is a small image displayed next to the page title in the browser tab. It helps users identify your website easily when they have multiple tabs open.</p>
+                
+                <div class="favicon-preview">
+                    <h3>Your New Favicon Preview</h3>
+                    <div class="favicon-box">
+                        <div class="favicon-img">AA</div>
+                        <p>This is how your new favicon will appear</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>How to Change Your Favicon</h2>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div>
+                            <p><strong>Create your favicon</strong> - Use a 64x64 or 32x32 pixel image. PNG format is recommended for quality.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div>
+                            <p><strong>Add the favicon to your project</strong> - Place the image file in your project's public folder or root directory.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div>
+                            <p><strong>Add the HTML code</strong> - Include the following code in the &lt;head&gt; section of your HTML file:</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="code-block">
+&lt;!-- Favicon --&gt;
+&lt;link rel="icon" type="image/x-icon" href="/favicon.ico"&gt;
+&lt;link rel="icon" type="image/png" href="/favicon.png"&gt;
 
-    <!-- Most compatible fallback (ICO) — put /favicon.ico in your public/ folder -->
-    <link rel="shortcut icon" href="/favicon.ico?v=4" type="image/x-icon" />
-    <link rel="icon" href="/favicon.ico?v=4" type="image/x-icon" />
+&lt;!-- For Apple devices --&gt;
+&lt;link rel="apple-touch-icon" href="/apple-touch-icon.png"&gt;
 
-    <!-- SVG (modern browsers) -->
-    <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
+&lt;!-- For Android devices --&gt;
+&lt;link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png"&gt;
+&lt;link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png"&gt;
 
-    <!-- PNG sizes -->
-    <link rel="icon" sizes="96x96" href="/favicon-96x96.png?v=4" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" />
-
-    <!-- Safari pinned tab -->
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
-
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/site.webmanifest?v=4" />
-    <meta name="theme-color" content="#ffffff" />
-  </head>
-  <body>
-    <!-- page content -->
-  </body>
+&lt;!-- Web App Manifest --&gt;
+&lt;link rel="manifest" href="/site.webmanifest"&gt;
+                </div>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div>
+                            <p><strong>Clear your browser cache</strong> - Old favicons are often cached by browsers. Clear your cache or do a hard refresh (Ctrl+F5) to see the changes.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div>
+                            <p><strong>Redeploy your site</strong> - If you're using Vercel, push your changes to GitHub to trigger a new deployment.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Best Practices</h2>
+                <p>• Use a simple design that works well at small sizes</p>
+                <p>• Save your favicon in multiple formats and sizes for different devices</p>
+                <p>• Use a square aspect ratio for your favicon</p>
+                <p>• Test your favicon on different browsers and devices</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Your Website &copy; 2023 | Favicon Implementation Guide</p>
+        </footer>
+    </div>
+</body>
 </html>
