@@ -119,7 +119,7 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme, uploadedFile, set
         </header>
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-4 mb-6">
-            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary" />
+            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary animate-shine" />
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
         </div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
@@ -210,10 +210,9 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
 const ChatInput = ({ prompt, setPrompt, formRef, uploadedFile, setUploadedFile, toggleListening, isListening }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { pending } = useFormStatus();
-    const disabled = pending;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey && (prompt.trim() || uploadedFile) && !disabled) {
+    if (event.key === 'Enter' && !event.shiftKey && (prompt.trim() || uploadedFile) && !pending) {
       event.preventDefault();
       if (formRef.current) {
         formRef.current.requestSubmit();
@@ -242,7 +241,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, uploadedFile, setUploadedFile, 
                 className="hidden"
                 accept="image/*,application/pdf,.txt"
             />
-            <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
+            <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8" onClick={() => fileInputRef.current?.click()} disabled={pending}>
                 <Paperclip className="h-4 w-4" />
                 <span className="sr-only">Attach file</span>
             </Button>
@@ -263,7 +262,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, uploadedFile, setUploadedFile, 
                     onChange={handlePromptChange}
                     onKeyDown={handleKeyDown}
                     className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 text-base placeholder:text-muted-foreground/80 h-8"
-                    disabled={disabled || isListening}
+                    disabled={pending || isListening}
                 />
             )}
             <button type="button" onClick={toggleListening} className={cn("shrink-0 text-muted-foreground hover:text-foreground p-2", isListening && "text-primary animate-pulse")}>
@@ -284,7 +283,7 @@ const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme, 
          <div className="flex flex-col h-screen bg-background">
             <header className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-3">
-                    <CrowLogo className="w-7 h-7" />
+                    <CrowLogo className="w-7 h-7 animate-shine" />
                     <div>
                         <h1 className="text-base sm:text-lg md:text-xl font-semibold">AeonAI Assistant</h1>
                         <p className="text-xs text-muted-foreground">Developed by Bissu</p>
