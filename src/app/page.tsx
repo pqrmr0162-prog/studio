@@ -119,7 +119,7 @@ const WelcomeView = ({ setPrompt, formRef, theme, toggleTheme, uploadedFile, set
         </header>
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-4 mb-6">
-            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary animate-shine" />
+            <CrowLogo className="w-20 h-20 md:w-24 md:h-24 text-primary" />
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold">AeonAI</h1>
         </div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground mb-12">How can I help you today?</h2>
@@ -207,11 +207,10 @@ const ChatView = ({ messages, pending }: { messages: any[], pending: boolean }) 
     );
 };
 
-const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUploadedFile, toggleListening, isListening }) => {
+const ChatInput = ({ prompt, setPrompt, formRef, uploadedFile, setUploadedFile, toggleListening, isListening }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [isTyping, setIsTyping] = useState(false);
-    const typingTimer = useRef<NodeJS.Timeout | null>(null);
-    const TYPING_TIMEOUT = 1000;
+    const { pending } = useFormStatus();
+    const disabled = pending;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && (prompt.trim() || uploadedFile) && !disabled) {
@@ -224,9 +223,6 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
   
   const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPrompt(e.target.value);
-    setIsTyping(true);
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => setIsTyping(false), TYPING_TIMEOUT);
   };
   
    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,12 +231,6 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
             setUploadedFile(file);
         }
     };
-    
-    useEffect(() => {
-        return () => {
-            if (typingTimer.current) clearTimeout(typingTimer.current);
-        }
-    }, []);
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
@@ -280,7 +270,7 @@ const ChatInput = ({ prompt, setPrompt, formRef, disabled, uploadedFile, setUplo
                 <Mic className="h-4 w-4" />
                 <span className="sr-only">Use microphone</span>
             </button>
-            <SubmitButton disabled={disabled || !(prompt.trim() || uploadedFile)} />
+            <SubmitButton disabled={!(prompt.trim() || uploadedFile)} />
         </div>
     </div>
   );
@@ -294,7 +284,7 @@ const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme, 
          <div className="flex flex-col h-screen bg-background">
             <header className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-3">
-                    <CrowLogo className="w-7 h-7 animate-shine" />
+                    <CrowLogo className="w-7 h-7" />
                     <div>
                         <h1 className="text-base sm:text-lg md:text-xl font-semibold">AeonAI Assistant</h1>
                         <p className="text-xs text-muted-foreground">Developed by Bissu</p>
@@ -313,7 +303,7 @@ const AppContent = ({ messages, prompt, setPrompt, formRef, theme, toggleTheme, 
             </header>
             <ChatView messages={messages} pending={pending} />
             <footer className="fixed bottom-0 left-0 right-0 p-4 z-10 w-full flex flex-col items-center gap-4 bg-background/50 backdrop-blur-sm">
-                <ChatInput prompt={prompt} setPrompt={setPrompt} formRef={formRef} disabled={pending} uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} toggleListening={toggleListening} isListening={isListening} />
+                <ChatInput prompt={prompt} setPrompt={setPrompt} formRef={formRef} uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} toggleListening={toggleListening} isListening={isListening} />
             </footer>
         </div>
     );
@@ -474,5 +464,7 @@ function Home() {
 }
 
 export default Home;
+
+    
 
     
